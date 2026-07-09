@@ -9,7 +9,7 @@
     --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --border:#2a3550;
     --text:#e8ecf6; --muted:#8b96b3; --accent:#5b8cff;
     --green:#1fa971; --green-bg:#123328; --blue:#3d7bfa; --blue-bg:#14213f;
-    --amber:#d99a2b; --amber-bg:#3a2c0f; --red:#e05252; --red-bg:#3a1518;
+    --amber:#d99a2b; --amber-bg:#3a2c0f; --orange:#e0793d; --orange-bg:#3a2210; --red:#e05252; --red-bg:#3a1518;
   }
   *{box-sizing:border-box;}
   body{
@@ -59,8 +59,22 @@
   .verdict.achat{background:var(--green-bg); color:var(--green);}
   .verdict.dca{background:var(--blue-bg); color:var(--blue);}
   .verdict.attends{background:var(--amber-bg); color:var(--amber);}
+  .verdict.reduit{background:var(--orange-bg); color:var(--orange);}
   .verdict.vends{background:var(--red-bg); color:var(--red);}
   .verdict .score{font-weight:500; font-size:.78rem; opacity:.85;}
+  .breakdown{width:100%; border-collapse:collapse; font-size:.8rem; margin-top:4px;}
+  .breakdown td{padding:5px 4px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  .breakdown td:first-child{color:var(--muted); width:auto;}
+  .breakdown td.wt{text-align:right; color:var(--muted); width:34px; padding-right:2px;}
+  .breakdown td.sub{width:130px; font-variant-numeric:tabular-nums;}
+  .breakdown select{
+    background:var(--bg); border:1px solid var(--border); color:var(--text);
+    padding:3px 6px; border-radius:6px; font-size:.78rem; width:100%;
+  }
+  .toggle-breakdown{
+    background:none; border:1px solid var(--border); color:var(--text); padding:7px 10px;
+    border-radius:8px; font-size:.8rem; cursor:pointer; text-align:left;
+  }
   .indicators{width:100%; border-collapse:collapse; font-size:.82rem;}
   .indicators td{padding:4px 0; border-bottom:1px solid var(--border);}
   .indicators td:first-child{color:var(--muted);}
@@ -100,11 +114,11 @@
 
 <header>
   <h1>Suivi TSX — XEQT · ZEB · CHPS · VDY</h1>
-  <p class="sub">Cours, composition et bilan technique (achat en bloc / DCA / attends / vends) pour quatre FNB cotés au TSX.</p>
+  <p class="sub">Cours, composition et bilan sur 10 critères pondérés (score /100 → action suggérée) pour quatre FNB cotés au TSX.</p>
 </header>
 
 <div class="disclaimer">
-  ⚠️ Outil personnel d'aide à la décision, pas un conseil financier. Le bilan est calculé automatiquement à partir de quatre indicateurs techniques simples (voir « Méthodologie » en bas de page) — il ne remplace pas une analyse complète ni les conseils d'un professionnel. Prix et historique viennent tous les deux de Yahoo Finance (endpoint non officiel, quasi temps réel, relayé via un proxy CORS tiers non affilié — allorigins.win — car Yahoo bloque les appels directs depuis un navigateur) : aucune clé API requise, mais aucune garantie officielle non plus — ça peut cesser de fonctionner sans préavis. La liste des titres qui composent chaque FNB est un instantané figé (voir date dans chaque section « Composition ») — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte). Le % affiché à côté de chaque titre est en revanche son propre % quotidien réel, chargé au moment où tu ouvres la section (pas au chargement de la page).
+  ⚠️ Outil personnel d'aide à la décision, pas un conseil financier. Le bilan combine 10 critères pondérés (voir « Méthodologie » en bas de page) : 6 sont calculés automatiquement à partir des cours, 4 (valorisation fondamentale, macro, flux de capitaux, événements à venir) demandent TON évaluation manuelle dans chaque carte car aucune source gratuite fiable n'existe pour ces données — sans ta saisie, ils restent neutres par défaut. Ça ne remplace pas une analyse complète ni les conseils d'un professionnel. Prix et historique viennent de Yahoo Finance (endpoint non officiel, quasi temps réel, relayé via un proxy CORS tiers non affilié — allorigins.win) : aucune clé API requise, mais aucune garantie officielle — ça peut cesser de fonctionner sans préavis. Le calcul utilise aussi un indice de référence (^GSPTSE ou ^SOX selon le titre) et le VIX (^VIX) pour deux des critères ; si l'un de ces appels échoue, le critère correspondant retombe simplement à une valeur neutre plutôt que de bloquer la carte. La liste des titres qui composent chaque FNB est un instantané figé (voir date dans chaque section « Composition ») — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte). Le % affiché à côté de chaque titre en composition est son propre % quotidien réel, chargé à l'ouverture de la section.
 </div>
 
 <div class="controls">
@@ -117,25 +131,34 @@
 </main>
 
 <details class="methodology">
-  <summary>Méthodologie du bilan (Achat en bloc / DCA / Attends / Vends)</summary>
+  <summary>Méthodologie du bilan (10 critères pondérés, score /100)</summary>
   <div class="inner">
-    <p>Le bilan additionne les points de 4 indicateurs techniques calculés à partir de l'historique quotidien (~1 an) de chaque titre, puis classe le score total :</p>
+    <p>Chaque critère est ramené à un score de 0 à 100, puis combiné selon sa pondération :</p>
     <table>
-      <tr><th>Indicateur</th><th>Rôle</th><th>Points</th></tr>
-      <tr><td>RSI (14 jours)</td><td>Survente / surachat</td><td>&minus;2 à +2</td></tr>
-      <tr><td>Écart au plus haut 52 semaines</td><td>Degré de « rabais » par rapport au récent sommet</td><td>&minus;1 à +2</td></tr>
-      <tr><td>Prix vs moyenne mobile 200 j</td><td>Filtre de tendance de fond (structurel)</td><td>&minus;3 à +3</td></tr>
-      <tr><td>Prix vs MM50 + signe du MACD</td><td>Confirmation de momentum court terme</td><td>&minus;1 à +1</td></tr>
+      <tr><th>#</th><th>Critère</th><th>Poids</th><th>Calcul</th></tr>
+      <tr><td>1</td><td>Distance au sommet 52 sem.</td><td>18%</td><td>Automatique — écart au plus haut sur ~1 an</td></tr>
+      <tr><td>2</td><td>Tendance (MM50 / MM200)</td><td>15%</td><td>Automatique — position du prix vs les 2 moyennes mobiles</td></tr>
+      <tr><td>3</td><td>Momentum (RSI, MACD, force relative)</td><td>12%</td><td>Automatique — RSI(14), signe du MACD, performance vs un indice de référence (^GSPTSE ou ^SOX)</td></tr>
+      <tr><td>4</td><td>Valorisation des titres sous-jacents (P/E, P/B)</td><td>12%</td><td><strong>Manuel</strong> — aucune source gratuite fiable</td></tr>
+      <tr><td>5</td><td>Contexte macroéconomique</td><td>10%</td><td><strong>Manuel</strong> — jugement, pas un chiffre calculable</td></tr>
+      <tr><td>6</td><td>Valorisation vs son historique</td><td>10%</td><td>Automatique (approximatif) — écart-type du prix vs sa moyenne 1 an, faute de données de P/E historiques</td></tr>
+      <tr><td>7</td><td>Flux de capitaux du fonds</td><td>8%</td><td><strong>Manuel</strong> — aucune API gratuite connue pour ça</td></tr>
+      <tr><td>8</td><td>Volatilité (VIX)</td><td>6%</td><td>Automatique — VIX élevé traité comme favorable (signal contrarien classique), à prendre avec discernement</td></tr>
+      <tr><td>9</td><td>Événements à venir</td><td>5%</td><td><strong>Manuel</strong> — prospectif par nature</td></tr>
+      <tr><td>10</td><td>Analyse graphique (position dans le range)</td><td>4%</td><td>Automatique (approximatif) — position du prix dans son range de 3 mois, pas une vraie lecture de supports/résistances</td></tr>
     </table>
-    <p style="margin-top:10px;">Score total (de &minus;7 à +8) →</p>
+    <p style="margin-top:10px;">Les 4 critères manuels ont un menu déroulant dans chaque carte (Très défavorable → Très favorable, neutre par défaut) sous « ▸ Détail du calcul ». Ils sont sauvegardés par titre dans ton navigateur et n'ont pas besoin d'être resaisis à chaque actualisation.</p>
+    <p style="margin-top:10px;">Score total (0 à 100) →</p>
     <table>
-      <tr><th>Score</th><th>Bilan</th><th>Interprétation</th></tr>
-      <tr><td>≥ 5</td><td>🟢 Achat en bloc</td><td>Rabais marqué + tendance de fond intacte : conviction élevée pour un dépôt important.</td></tr>
-      <tr><td>2 à 4</td><td>🔵 DCA</td><td>Conditions normales/favorables : poursuivre les achats périodiques réguliers.</td></tr>
-      <tr><td>&minus;2 à 1</td><td>🟡 Attends</td><td>Titre étiré ou neutre sans opportunité claire : reporter les nouveaux dépôts.</td></tr>
-      <tr><td>≤ &minus;3</td><td>🔴 Vends</td><td>Tendance de fond cassée et momentum négatif : signal tactique de réduction, pas une recommandation d'abandonner un placement de long terme.</td></tr>
+      <tr><th>Score</th><th>Action</th></tr>
+      <tr><td>90–100</td><td>🟢 Acheter agressivement (ex. 1 000$)</td></tr>
+      <tr><td>80–89</td><td>🟢 Acheter (500$)</td></tr>
+      <tr><td>65–79</td><td>🔵 DCA seulement (achat planifié, sans accélérer)</td></tr>
+      <tr><td>50–64</td><td>🟡 Attendre avant un achat discrétionnaire (DCA automatique OK)</td></tr>
+      <tr><td>30–49</td><td>🟠 Attendre / réduire les achats discrétionnaires</td></tr>
+      <tr><td>0–29</td><td>🔴 Vente seulement si les fondamentaux ont changé — une mauvaise note de timing seule n'est généralement pas une raison de vendre un bon FNB de long terme</td></tr>
     </table>
-    <p style="margin-top:10px;">Ce système est simpliste par construction (aucune analyse fondamentale, aucun contexte macro) — il sert de repère, pas de vérité absolue. Pour XEQT et VDY en particulier (FNB de long terme largement diversifiés), un signal « Vends » devrait être rare et interprété avec prudence.</p>
+    <p style="margin-top:10px;">⚠️ Limite connue : les critères 1, 6 et 10 sont basés uniquement sur le prix, donc un titre qui s'effondre pour de mauvaises raisons fondamentales aura quand même l'air « à rabais » sur ces trois critères. C'est précisément pour ça que les critères manuels (surtout #4 et #5) comptent — remplis-les honnêtement plutôt que de les laisser à « Neutre » si tu as un avis. Les constantes de calibration (échelles, seuils) sont des choix raisonnables mais arbitraires, pas des valeurs validées empiriquement.</p>
   </div>
 </details>
 
@@ -157,6 +180,7 @@
       name:"iShares Core Equity ETF Portfolio",
       type:"Répartition d'actifs (FNB de FNB) — actions mondiales, 100% actions",
       officialUrl:'https://www.blackrock.com/ca/investors/en/products/309480/ishares-core-equity-etf-portfolio',
+      benchmark:'^GSPTSE',
       holdingsType:'funds',
       holdingsAsOf:"instantané indicatif (à vérifier sur la fiche BlackRock)",
       holdings:[
@@ -172,6 +196,7 @@
       name:'BMO Equal Weight Banks Index ETF',
       type:'Secteur — 6 grandes banques canadiennes, poids égal',
       officialUrl:'https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-equal-weight-banks-index-etf-zeb/',
+      benchmark:'^GSPTSE',
       holdingsType:'stocks',
       holdingsAsOf:"instantané indicatif (indice à poids égal, se rééquilibre trimestriellement)",
       holdings:[
@@ -188,6 +213,7 @@
       name:'Global X Artificial Intelligence Semiconductor Index ETF',
       type:'Thématique — semi-conducteurs IA, couvert en $ CA',
       officialUrl:'https://www.globalx.ca/product/chps',
+      benchmark:'^SOX',
       holdingsType:'stocks',
       holdingsAsOf:'30 septembre 2025 (rapport officiel Global X)',
       holdings:[
@@ -208,6 +234,7 @@
       name:'Vanguard FTSE Canadian High Dividend Yield Index ETF',
       type:'Dividendes élevés — actions canadiennes',
       officialUrl:'https://www.vanguard.ca/en/product/etf/equity/9560/vanguard-ftse-canadian-high-dividend-yield-index-etf',
+      benchmark:'^GSPTSE',
       holdingsType:'stocks',
       holdingsAsOf:'instantané indicatif (à vérifier sur la fiche Vanguard)',
       holdings:[
@@ -285,40 +312,99 @@
     return {macd:lastMacd, signal:lastSignal, hist:lastMacd-lastSignal};
   }
 
-  function computeVerdict(d){
-    var pts = {};
-    // RSI
-    if (d.rsi < 30) pts.rsi = 2;
-    else if (d.rsi < 45) pts.rsi = 1;
-    else if (d.rsi <= 55) pts.rsi = 0;
-    else if (d.rsi <= 70) pts.rsi = -1;
-    else pts.rsi = -2;
+  function clamp(lo, hi, v){ return Math.max(lo, Math.min(hi, v)); }
+  function average(arr){ var s=0; for(var i=0;i<arr.length;i++) s+=arr[i]; return s/arr.length; }
+  function stddev(arr, mean){ var s=0; for(var i=0;i<arr.length;i++){ var d=arr[i]-mean; s+=d*d; } return Math.sqrt(s/arr.length); }
+  function periodReturn(closes, lookback){
+    var n = closes.length;
+    if (n <= lookback) return null;
+    return (closes[n-1]/closes[n-1-lookback] - 1) * 100;
+  }
 
-    // écart au plus haut 52 semaines
+  var CRITERIA = [
+    {key:'high52', label:'Distance au sommet 52 sem.', weight:18, manual:false},
+    {key:'trend', label:'Tendance (MM50/MM200)', weight:15, manual:false},
+    {key:'momentum', label:'Momentum (RSI/MACD/force relative)', weight:12, manual:false},
+    {key:'valuation', label:'Valorisation sous-jacents (P/E, P/B)', weight:12, manual:true},
+    {key:'macro', label:'Contexte macroéconomique', weight:10, manual:true},
+    {key:'histValuation', label:'Valorisation vs historique', weight:10, manual:false},
+    {key:'flows', label:'Flux de capitaux du fonds', weight:8, manual:true},
+    {key:'vix', label:'Volatilité (VIX)', weight:6, manual:false},
+    {key:'events', label:'Événements à venir', weight:5, manual:true},
+    {key:'chart', label:'Analyse graphique (range 3 mois)', weight:4, manual:false}
+  ];
+
+  var MANUAL_KEYS = ['valuation','macro','flows','events'];
+  var MANUAL_STORAGE_PREFIX = 'tsxTracker_manual_';
+
+  function getManual(tickerSymbol){
+    var out = {};
+    var saved = {};
+    try{ saved = JSON.parse(localStorage.getItem(MANUAL_STORAGE_PREFIX + tickerSymbol) || '{}'); }catch(e){}
+    MANUAL_KEYS.forEach(function(k){ out[k] = saved[k] != null ? saved[k] : 50; });
+    return out;
+  }
+  function setManualValue(tickerSymbol, key, value){
+    var manual = getManual(tickerSymbol);
+    manual[key] = value;
+    localStorage.setItem(MANUAL_STORAGE_PREFIX + tickerSymbol, JSON.stringify(manual));
+  }
+
+  // 6 sous-scores calculés automatiquement (0-100) à partir des cours — voir la
+  // section « Méthodologie » de la page pour la justification de chaque échelle.
+  function computeAutoScores(d){
     var distHigh = (d.price - d.high52) / d.high52 * 100; // <=0
-    if (distHigh <= -15) pts.high = 2;
-    else if (distHigh <= -7) pts.high = 1;
-    else if (distHigh <= -1) pts.high = 0;
-    else pts.high = -1;
+    var high52Score = clamp(0, 100, 50 - distHigh*3);
 
-    // tendance de fond (vs moyenne mobile longue disponible, ~100 j en plan gratuit)
-    pts.smaLong = d.price > d.smaLong ? 3 : -3;
+    var pct50 = (d.price - d.sma50) / d.sma50 * 100;
+    var pctLong = (d.price - d.smaLong) / d.smaLong * 100;
+    var trendScore = clamp(0, 100, 50 + ((pct50+pctLong)/2)*5);
 
-    // momentum court terme (SMA50 + MACD)
-    var bull50 = d.price > d.sma50;
-    var bullMacd = d.macdHist > 0;
-    if (bull50 && bullMacd) pts.momentum = 1;
-    else if (!bull50 && !bullMacd) pts.momentum = -1;
-    else pts.momentum = 0;
+    var macdScore = clamp(0, 100, 50 + (d.macdHist/d.price*100)*20);
+    var relScore = d.relPerf != null ? clamp(0, 100, 50 + d.relPerf*5) : 50;
+    var momentumScore = (clamp(0,100,d.rsi) + macdScore + relScore) / 3;
 
-    var total = pts.rsi + pts.high + pts.smaLong + pts.momentum;
+    var mean = average(d.closes), sd = stddev(d.closes, mean);
+    var z = sd ? (d.price - mean) / sd : 0;
+    var histValuationScore = clamp(0, 100, 50 - z*15);
+
+    var vixScore = d.vix != null ? clamp(0, 100, 50 + (d.vix-18)*2.5) : 50;
+
+    var rangeHigh = Math.max.apply(null, d.rangeHighs), rangeLow = Math.min.apply(null, d.rangeLows);
+    var rangePos = rangeHigh > rangeLow ? (d.price-rangeLow)/(rangeHigh-rangeLow) : 0.5;
+    var chartScore = clamp(0, 100, (1-rangePos)*100);
+
+    return {
+      high52:high52Score, trend:trendScore, momentum:momentumScore,
+      histValuation:histValuationScore, vix:vixScore, chart:chartScore,
+      distHigh:distHigh, z:z
+    };
+  }
+
+  function computeVerdict(auto, manual){
+    var sub = {
+      high52:auto.high52, trend:auto.trend, momentum:auto.momentum,
+      valuation:manual.valuation, macro:manual.macro, histValuation:auto.histValuation,
+      flows:manual.flows, vix:auto.vix, events:manual.events, chart:auto.chart
+    };
+    var total = 0;
+    var breakdown = CRITERIA.map(function(c){
+      var s = sub[c.key];
+      var contribution = s * c.weight / 100;
+      total += contribution;
+      return {key:c.key, label:c.label, weight:c.weight, manual:c.manual, subscore:s, contribution:contribution};
+    });
+    total = Math.round(total*10)/10;
+
     var label, cls;
-    if (total >= 5){ label='Achat en bloc'; cls='achat'; }
-    else if (total >= 2){ label='DCA'; cls='dca'; }
-    else if (total >= -2){ label='Attends'; cls='attends'; }
-    else { label='Vends'; cls='vends'; }
+    if (total >= 90){ label='Acheter agressivement (1 000$)'; cls='achat'; }
+    else if (total >= 80){ label='Acheter (500$)'; cls='achat'; }
+    else if (total >= 65){ label='DCA seulement'; cls='dca'; }
+    else if (total >= 50){ label='Attendre (discrétionnaire) — DCA auto OK'; cls='attends'; }
+    else if (total >= 30){ label='Attendre / réduire les achats discrétionnaires'; cls='reduit'; }
+    else { label='Vente seulement si fondamentaux changés'; cls='vends'; }
 
-    return {pts:pts, total:total, label:label, cls:cls, distHigh:distHigh};
+    return {total:total, breakdown:breakdown, label:label, cls:cls, distHigh:auto.distHigh};
   }
 
   // ---------- réseau ----------
@@ -341,8 +427,11 @@
   // quotidien (timestamp + indicators.quote) pour calculer les indicateurs.
   // Le proxy est un service tiers non affilié : peut être lent, en panne, ou
   // disparaître sans préavis — c'est un point de fragilité assumé.
-  function fetchYahooHistory(symbol){
-    var target = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol + '.TO') + '?interval=1d&range=1y';
+  // yahooSymbol doit déjà être au format Yahoo complet (ex. "XEQT.TO", "^GSPTSE",
+  // "^VIX") — cette fonction n'ajoute plus de suffixe elle-même, pour pouvoir
+  // aussi servir aux indices de référence et au VIX, pas seulement aux titres TSX.
+  function fetchYahooHistory(yahooSymbol){
+    var target = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(yahooSymbol) + '?interval=1d&range=1y';
     var proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target);
     // Le timeout doit couvrir toute la chaîne (connexion + lecture du corps de la
     // réponse), pas seulement fetch() : un proxy qui accepte la connexion puis reste
@@ -366,7 +455,7 @@
           open: quote.open[i], high: quote.high[i], low: quote.low[i], close: c, volume: quote.volume[i]
         });
       }
-      if (!rows.length) throw new Error('Aucune donnée historique pour ' + symbol);
+      if (!rows.length) throw new Error('Aucune donnée historique pour ' + yahooSymbol);
       // Le % quotidien doit comparer au dernier jour de bourse précédent, pas à
       // meta.chartPreviousClose (qui est la clôture d'AVANT le début de la fenêtre
       // demandée — donc d'il y a ~1 an avec range=1y, pas d'hier). On prend toujours
@@ -382,7 +471,7 @@
         changePct: prevClose ? (price - prevClose) / prevClose * 100 : 0
       };
     });
-    return withTimeout(work, 8000, 'Yahoo (' + symbol + ')');
+    return withTimeout(work, 8000, 'Yahoo (' + yahooSymbol + ')');
   }
 
   // Le endpoint "quote" (v7) de Yahoo exige désormais une authentification par
@@ -414,11 +503,14 @@
 
   function fmtPrice(v){ return '$' + v.toFixed(2); }
   function fmtPct(v){ return (v>=0?'+':'') + v.toFixed(2) + '%'; }
-  function ptsBadge(p){
-    var c = p>0?'pos':(p<0?'neg':'zero');
-    var s = (p>0?'+':'') + p;
-    return '<span class="pts ' + c + '">' + s + '</span>';
-  }
+
+  var MANUAL_OPTIONS = [
+    {value:0, label:'Très défavorable'},
+    {value:25, label:'Défavorable'},
+    {value:50, label:'Neutre'},
+    {value:75, label:'Favorable'},
+    {value:100, label:'Très favorable'}
+  ];
 
   function buildCardSkeleton(t){
     var el = document.createElement('div');
@@ -430,6 +522,8 @@
         '<div class="price-block"><div class="price" data-role="price">—</div><div class="change" data-role="change">Clique « Actualiser »</div><div class="price-source" data-role="priceSource" style="font-size:.68rem; color:var(--muted); text-align:right;"></div></div>' +
       '</div>' +
       '<div data-role="body"></div>' +
+      '<button class="toggle-breakdown" data-role="toggleBreakdown">▸ Détail du calcul (10 critères)</button>' +
+      '<div class="holdings" data-role="breakdown"></div>' +
       '<button class="toggle-holdings" data-role="toggleHoldings">▸ Composition (' + (t.holdingsType==='funds'?'FNB sous-jacents':'top ' + t.holdings.length) + ')</button>' +
       '<div class="holdings" data-role="holdings">' +
         '<div class="holdings-meta">Données au : ' + escH(t.holdingsAsOf) + ' — <a href="' + escH(t.officialUrl) + '" target="_blank" rel="noopener" style="color:inherit;">fiche officielle ↗</a></div>' +
@@ -443,6 +537,12 @@
         '<a href="' + escH(t.officialUrl) + '" target="_blank" rel="noopener">Fiche du fonds ↗</a>' +
       '</div>';
     grid.appendChild(el);
+    el.querySelector('[data-role="toggleBreakdown"]').addEventListener('click', function(){
+      var b = el.querySelector('[data-role="breakdown"]');
+      var btn = el.querySelector('[data-role="toggleBreakdown"]');
+      var open = b.classList.toggle('open');
+      btn.textContent = (open?'▾':'▸') + ' Détail du calcul (10 critères)';
+    });
     el.querySelector('[data-role="toggleHoldings"]').addEventListener('click', function(){
       var h = el.querySelector('[data-role="holdings"]');
       var btn = el.querySelector('[data-role="toggleHoldings"]');
@@ -495,21 +595,42 @@
     var srcEl = el.querySelector('[data-role="priceSource"]');
     srcEl.textContent = '🟢 cours quasi temps réel (Yahoo, ~15 min, via proxy)';
 
-    var v = data.verdict;
-    var body = el.querySelector('[data-role="body"]');
-    body.innerHTML =
-      '<div class="verdict ' + v.cls + '"><span>' + escH(v.label) + '</span><span class="score">score ' + v.total + '</span></div>' +
-      '<table class="indicators"><tbody>' +
-        '<tr><td>RSI (14)</td><td>' + data.rsi.toFixed(1) + ptsBadge(v.pts.rsi) + '</td></tr>' +
-        '<tr><td>Écart plus haut 52 sem.</td><td>' + fmtPct(v.distHigh) + ptsBadge(v.pts.high) + '</td></tr>' +
-        '<tr><td>Prix vs MM200</td><td>' + (data.price>data.smaLong?'au-dessus':'en-dessous') + ' (' + fmtPrice(data.smaLong) + ')' + ptsBadge(v.pts.smaLong) + '</td></tr>' +
-        '<tr><td>Momentum (MM50 + MACD)</td><td>' + (data.price>data.sma50?'MM50 haussier':'MM50 baissier') + ', MACD ' + (data.macdHist>0?'+':'') + data.macdHist.toFixed(3) + ptsBadge(v.pts.momentum) + '</td></tr>' +
-      '</tbody></table>';
+    renderVerdict(t, data.verdict);
 
     var footer = el.querySelector('.card-footer');
     var ts = document.createElement('span');
     ts.textContent = 'Cours au ' + data.lastDate + ' · maj ' + data.updatedAt.toLocaleTimeString('fr-CA');
     footer.insertBefore(ts, footer.firstChild);
+  }
+
+  // Affiche le bandeau de bilan + le détail des 10 critères (avec menus pour les
+  // 4 manuels). Appelée depuis renderCardData (nouvelles données) et depuis
+  // recomputeVerdict (changement d'un menu manuel, sans nouvel appel réseau).
+  function renderVerdict(t, verdict){
+    var el = document.getElementById('card-' + t.symbol);
+    var body = el.querySelector('[data-role="body"]');
+    body.innerHTML = '<div class="verdict ' + verdict.cls + '"><span>' + escH(verdict.label) + '</span><span class="score">' + verdict.total + '/100</span></div>';
+
+    var manual = getManual(t.symbol);
+    var breakdownEl = el.querySelector('[data-role="breakdown"]');
+    breakdownEl.innerHTML = '<table class="breakdown"><tbody>' + verdict.breakdown.map(function(row){
+      var valueCell;
+      if (row.manual){
+        valueCell = '<select data-manual-key="' + row.key + '">' + MANUAL_OPTIONS.map(function(o){
+          return '<option value="' + o.value + '"' + (manual[row.key]===o.value?' selected':'') + '">' + escH(o.label) + '</option>';
+        }).join('') + '</select>';
+      } else {
+        valueCell = '<span style="float:right;">' + row.subscore.toFixed(0) + '</span>';
+      }
+      return '<tr><td>' + escH(row.label) + '</td><td class="wt">' + row.weight + '%</td><td class="sub">' + valueCell + '</td></tr>';
+    }).join('') + '</tbody></table>';
+
+    Array.prototype.forEach.call(breakdownEl.querySelectorAll('select[data-manual-key]'), function(sel){
+      sel.addEventListener('change', function(){
+        setManualValue(t.symbol, sel.getAttribute('data-manual-key'), parseInt(sel.value, 10));
+        recomputeVerdict(t);
+      });
+    });
   }
 
   function renderCardError(symbol, msg){
@@ -524,19 +645,52 @@
     if (isLoading) el.classList.add('loading'); else el.classList.remove('loading');
   }
 
+  // Résultats du dernier calcul automatique par titre, gardés en mémoire pour
+  // pouvoir recalculer le bilan quand un critère manuel change, sans refaire
+  // d'appel réseau.
+  var LAST_AUTO = {};
+  // Historique des indices de référence (^GSPTSE, ^SOX) et du VIX (^VIX), partagé
+  // entre les cartes qui en ont besoin plutôt que refetché à chaque carte.
+  var BENCH_CACHE = {};
+
   function refreshTicker(t){
     setCardLoading(t.symbol, true);
-    return fetchYahooHistory(t.symbol).then(function(data){
+    return fetchYahooHistory(t.symbol + '.TO').then(function(data){
       var rows = data.rows;
       var closes = rows.map(function(r){ return r.close; });
       var highs = rows.map(function(r){ return r.high; });
+      var lows = rows.map(function(r){ return r.low; });
       var sma50 = computeSMA(closes,50);
       var smaLong = computeSMA(closes,200);
       var rsi = computeRSI(closes,14);
       var periodHigh = Math.min(252, highs.length);
       var highN = Math.max.apply(null, highs.slice(highs.length-periodHigh));
       var macd = computeMACD(closes);
-      var verdict = computeVerdict({price:data.price, sma50:sma50, smaLong:smaLong, rsi:rsi, high52:highN, macdHist:macd.hist});
+
+      var bench = BENCH_CACHE[t.benchmark];
+      var relPerf = null;
+      if (bench && bench.rows){
+        var benchCloses = bench.rows.map(function(r){ return r.close; });
+        var tickerRet = periodReturn(closes, 21);
+        var benchRet = periodReturn(benchCloses, 21);
+        if (tickerRet != null && benchRet != null) relPerf = tickerRet - benchRet;
+      }
+      var vixData = BENCH_CACHE['^VIX'];
+      var vix = vixData ? vixData.price : null;
+
+      var periodRange = Math.min(63, rows.length);
+      var rangeHighs = highs.slice(highs.length - periodRange);
+      var rangeLows = lows.slice(lows.length - periodRange);
+
+      var auto = computeAutoScores({
+        price:data.price, sma50:sma50, smaLong:smaLong, rsi:rsi, high52:highN,
+        macdHist:macd.hist, closes:closes, relPerf:relPerf, vix:vix,
+        rangeHighs:rangeHighs, rangeLows:rangeLows
+      });
+      LAST_AUTO[t.symbol] = auto;
+      var manual = getManual(t.symbol);
+      var verdict = computeVerdict(auto, manual);
+
       renderCardData(t, {
         price:data.price, changeAbs:data.changeAbs, changePct:data.changePct,
         sma50:sma50, smaLong:smaLong, rsi:rsi, macdHist:macd.hist,
@@ -556,9 +710,23 @@
     status.textContent = 'Actualisation…';
     // Un à la fois, avec une courte pause entre chaque : le proxy CORS public
     // (allorigins.win) rejette ("Failed to fetch") au-delà de ~1-2 connexions
-    // simultanées par visiteur. Chaque refreshTicker a de toute façon un délai
-    // maximum (withTimeout), donc la chaîne se termine toujours.
+    // simultanées par visiteur. Chaque appel a de toute façon un délai maximum
+    // (withTimeout), donc la chaîne se termine toujours.
+    var benchSymbols = {'^VIX': true};
+    TICKERS.forEach(function(t){ benchSymbols[t.benchmark] = true; });
+
     var chain = Promise.resolve();
+    Object.keys(benchSymbols).forEach(function(sym){
+      chain = chain.then(function(){
+        return fetchYahooHistory(sym).then(function(data){
+          BENCH_CACHE[sym] = data;
+        }).catch(function(){
+          BENCH_CACHE[sym] = null; // dégrade en neutre plutôt que de bloquer les cartes
+        }).then(function(){
+          return new Promise(function(res){ setTimeout(res, 800); });
+        });
+      });
+    });
     TICKERS.forEach(function(t){
       chain = chain.then(function(){
         return refreshTicker(t).then(function(){
@@ -571,6 +739,16 @@
     }).finally(function(){
       btn.disabled = false;
     });
+  }
+
+  // Recalcule et réaffiche uniquement le bilan (pas de nouvel appel réseau) quand
+  // un critère manuel change.
+  function recomputeVerdict(t){
+    var auto = LAST_AUTO[t.symbol];
+    if (!auto) return;
+    var manual = getManual(t.symbol);
+    var verdict = computeVerdict(auto, manual);
+    renderVerdictOnly(t, verdict);
   }
 
   // ---------- init ----------
