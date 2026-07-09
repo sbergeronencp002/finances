@@ -78,8 +78,7 @@
   .holdings-meta{font-size:.75rem; color:var(--muted); margin-bottom:6px;}
   .holdings table{width:100%; border-collapse:collapse; font-size:.82rem;}
   .holdings td{padding:4px 0;}
-  .holdings td:nth-child(2){text-align:right; width:56px; font-variant-numeric:tabular-nums;}
-  .holdings td:last-child{text-align:right; width:56px; font-variant-numeric:tabular-nums; padding-left:8px;}
+  .holdings td:last-child{text-align:right; width:56px; font-variant-numeric:tabular-nums;}
   .bar-wrap{background:var(--panel2); border-radius:4px; height:6px; margin-top:3px; overflow:hidden;}
   .bar{height:100%; background:var(--accent); border-radius:4px;}
   .card-footer{font-size:.72rem; color:var(--muted); display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;}
@@ -105,7 +104,7 @@
 </header>
 
 <div class="disclaimer">
-  ⚠️ Outil personnel d'aide à la décision, pas un conseil financier. Le bilan est calculé automatiquement à partir de quatre indicateurs techniques simples (voir « Méthodologie » en bas de page) — il ne remplace pas une analyse complète ni les conseils d'un professionnel. Prix et historique viennent tous les deux de Yahoo Finance (endpoint non officiel, quasi temps réel, relayé via un proxy CORS tiers non affilié — allorigins.win — car Yahoo bloque les appels directs depuis un navigateur) : aucune clé API requise, mais aucune garantie officielle non plus — ça peut cesser de fonctionner sans préavis. Les compositions des FNB sont des instantanés figés (pondérations) — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte) pour les pondérations à jour ; le % à côté de chaque titre, lui, est le % quotidien réel de ce titre (chargé au moment où tu ouvres la section « Composition », pas au chargement de la page).
+  ⚠️ Outil personnel d'aide à la décision, pas un conseil financier. Le bilan est calculé automatiquement à partir de quatre indicateurs techniques simples (voir « Méthodologie » en bas de page) — il ne remplace pas une analyse complète ni les conseils d'un professionnel. Prix et historique viennent tous les deux de Yahoo Finance (endpoint non officiel, quasi temps réel, relayé via un proxy CORS tiers non affilié — allorigins.win — car Yahoo bloque les appels directs depuis un navigateur) : aucune clé API requise, mais aucune garantie officielle non plus — ça peut cesser de fonctionner sans préavis. Les compositions des FNB sont des instantanés figés — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte) pour les pondérations à jour.
 </div>
 
 <div class="controls">
@@ -161,11 +160,11 @@
       holdingsType:'funds',
       holdingsAsOf:"instantané indicatif (à vérifier sur la fiche BlackRock)",
       holdings:[
-        {name:'iShares Core S&P/TSX Capped Composite Index ETF (XIC) — Canada', weight:26.8, symbol:'XIC.TO'},
-        {name:'iShares Core MSCI EAFE IMI Index ETF (XEF) — International développé', weight:25.3, symbol:'XEF.TO'},
-        {name:'iShares Core S&P Total U.S. Stock Market ETF (ITOT) — États-Unis', weight:21.9, symbol:'ITOT'},
-        {name:'iShares Core S&P Total U.S. Stock Market ETF (XTOT) — États-Unis', weight:20.4, symbol:'XTOT'},
-        {name:'iShares Core MSCI Emerging Markets IMI Index ETF (XEC) — Marchés émergents', weight:5.4, symbol:'XEC.TO'}
+        {name:'iShares Core S&P/TSX Capped Composite Index ETF (XIC) — Canada', weight:26.8},
+        {name:'iShares Core MSCI EAFE IMI Index ETF (XEF) — International développé', weight:25.3},
+        {name:'iShares Core S&P Total U.S. Stock Market ETF (ITOT) — États-Unis', weight:21.9},
+        {name:'iShares Core S&P Total U.S. Stock Market ETF (XTOT) — États-Unis', weight:20.4},
+        {name:'iShares Core MSCI Emerging Markets IMI Index ETF (XEC) — Marchés émergents', weight:5.4}
       ]
     },
     {
@@ -176,12 +175,12 @@
       holdingsType:'stocks',
       holdingsAsOf:"instantané indicatif (indice à poids égal, se rééquilibre trimestriellement)",
       holdings:[
-        {name:'Banque Toronto-Dominion (TD)', weight:17.1, symbol:'TD.TO'},
-        {name:'Banque CIBC (CM)', weight:16.9, symbol:'CM.TO'},
-        {name:'Banque Royale du Canada (RY)', weight:16.9, symbol:'RY.TO'},
-        {name:'Banque de Montréal (BMO)', weight:16.5, symbol:'BMO.TO'},
-        {name:'Banque Nationale du Canada (NA)', weight:16.3, symbol:'NA.TO'},
-        {name:'Banque Scotia (BNS)', weight:16.1, symbol:'BNS.TO'}
+        {name:'Banque Toronto-Dominion (TD)', weight:17.1},
+        {name:'Banque CIBC (CM)', weight:16.9},
+        {name:'Banque Royale du Canada (RY)', weight:16.9},
+        {name:'Banque de Montréal (BMO)', weight:16.5},
+        {name:'Banque Nationale du Canada (NA)', weight:16.3},
+        {name:'Banque Scotia (BNS)', weight:16.1}
       ]
     },
     {
@@ -192,16 +191,16 @@
       holdingsType:'stocks',
       holdingsAsOf:'30 septembre 2025 (rapport officiel Global X)',
       holdings:[
-        {name:'NVIDIA Corp.', weight:18.97, symbol:'NVDA'},
-        {name:'Broadcom Inc.', weight:16.69, symbol:'AVGO'},
-        {name:'Taiwan Semiconductor Mfg. (ADR)', weight:16.06, symbol:'TSM'},
-        {name:'ASML Holding NV', weight:10.43, symbol:'ASML'},
-        {name:'Advanced Micro Devices Inc.', weight:7.19, symbol:'AMD'},
-        {name:'QUALCOMM Inc.', weight:4.91, symbol:'QCOM'},
-        {name:'Lam Research Corp.', weight:4.64, symbol:'LRCX'},
-        {name:'Applied Materials Inc.', weight:4.47, symbol:'AMAT'},
-        {name:'ARM Holdings PLC (ADR)', weight:4.10, symbol:'ARM'},
-        {name:'KLA Corp.', weight:3.90, symbol:'KLAC'}
+        {name:'NVIDIA Corp.', weight:18.97},
+        {name:'Broadcom Inc.', weight:16.69},
+        {name:'Taiwan Semiconductor Mfg. (ADR)', weight:16.06},
+        {name:'ASML Holding NV', weight:10.43},
+        {name:'Advanced Micro Devices Inc.', weight:7.19},
+        {name:'QUALCOMM Inc.', weight:4.91},
+        {name:'Lam Research Corp.', weight:4.64},
+        {name:'Applied Materials Inc.', weight:4.47},
+        {name:'ARM Holdings PLC (ADR)', weight:4.10},
+        {name:'KLA Corp.', weight:3.90}
       ]
     },
     {
@@ -212,16 +211,16 @@
       holdingsType:'stocks',
       holdingsAsOf:'instantané indicatif (à vérifier sur la fiche Vanguard)',
       holdings:[
-        {name:'Banque Royale du Canada', weight:15.26, symbol:'RY.TO'},
-        {name:'Banque Toronto-Dominion', weight:10.93, symbol:'TD.TO'},
-        {name:'Enbridge Inc.', weight:6.80, symbol:'ENB.TO'},
-        {name:'Banque de Montréal', weight:6.54, symbol:'BMO.TO'},
-        {name:'Banque CIBC', weight:5.83, symbol:'CM.TO'},
-        {name:'Banque Scotia', weight:5.69, symbol:'BNS.TO'},
-        {name:'Canadian Natural Resources Ltd.', weight:5.28, symbol:'CNQ.TO'},
-        {name:'Suncor Energy Inc.', weight:4.27, symbol:'SU.TO'},
-        {name:'TC Energy Corp.', weight:3.93, symbol:'TRP.TO'},
-        {name:'Manuvie (Manulife Financial Corp.)', weight:3.65, symbol:'MFC.TO'}
+        {name:'Banque Royale du Canada', weight:15.26},
+        {name:'Banque Toronto-Dominion', weight:10.93},
+        {name:'Enbridge Inc.', weight:6.80},
+        {name:'Banque de Montréal', weight:6.54},
+        {name:'Banque CIBC', weight:5.83},
+        {name:'Banque Scotia', weight:5.69},
+        {name:'Canadian Natural Resources Ltd.', weight:5.28},
+        {name:'Suncor Energy Inc.', weight:4.27},
+        {name:'TC Energy Corp.', weight:3.93},
+        {name:'Manuvie (Manulife Financial Corp.)', weight:3.65}
       ]
     }
   ];
@@ -386,30 +385,6 @@
     return withTimeout(work, 8000, 'Yahoo (' + symbol + ')');
   }
 
-  // Le endpoint "quote" (v7) de Yahoo exige désormais une authentification par
-  // cookie/jeton ("crumb") que le proxy ne peut pas fournir — contrairement à
-  // "chart" (v8), resté ouvert, qu'on utilise déjà pour les cartes. On réutilise
-  // donc "chart" ici aussi (juste 5 jours, pas besoin de l'historique complet).
-  function fetchDailyChange(symbol){
-    var target = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol) + '?interval=1d&range=5d';
-    var proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target);
-    var work = fetch(proxied).then(function(res){
-      if (!res.ok) throw new Error('Proxy CORS HTTP ' + res.status);
-      return res.json();
-    }).then(function(json){
-      var result = json && json.chart && json.chart.result && json.chart.result[0];
-      var quote = result && result.indicators && result.indicators.quote && result.indicators.quote[0];
-      if (!result || !quote) throw new Error('Réponse inattendue pour ' + symbol);
-      var closes = quote.close.filter(function(c){ return c != null; });
-      if (closes.length < 2) throw new Error('Historique insuffisant pour ' + symbol);
-      var last = closes[closes.length-1];
-      var prev = closes[closes.length-2];
-      var price = result.meta && result.meta.regularMarketPrice != null ? result.meta.regularMarketPrice : last;
-      return prev ? (price - prev) / prev * 100 : 0;
-    });
-    return withTimeout(work, 8000, 'Yahoo (' + symbol + ')');
-  }
-
   // ---------- rendu ----------
   var grid = document.getElementById('cardGrid');
 
@@ -435,9 +410,7 @@
       '<div class="holdings" data-role="holdings">' +
         '<div class="holdings-meta">Données au : ' + escH(t.holdingsAsOf) + ' — <a href="' + escH(t.officialUrl) + '" target="_blank" rel="noopener" style="color:inherit;">fiche officielle ↗</a></div>' +
         '<table><tbody>' + t.holdings.map(function(h){
-          return '<tr data-symbol="' + escH(h.symbol) + '"><td>' + escH(h.name) + '<div class="bar-wrap"><div class="bar" style="width:' + Math.min(100, h.weight*3) + '%"></div></div></td>' +
-            '<td>' + h.weight.toFixed(2) + '%</td>' +
-            '<td data-role="hchg" style="color:var(--muted);">…</td></tr>';
+          return '<tr><td>' + escH(h.name) + '<div class="bar-wrap"><div class="bar" style="width:' + Math.min(100, h.weight*3) + '%"></div></div></td><td>' + h.weight.toFixed(2) + '%</td></tr>';
         }).join('') + '</tbody></table>' +
       '</div>' +
       '<div class="card-footer">' +
@@ -450,40 +423,8 @@
       var btn = el.querySelector('[data-role="toggleHoldings"]');
       var open = h.classList.toggle('open');
       btn.textContent = (open?'▾':'▸') + ' Composition (' + (t.holdingsType==='funds'?'FNB sous-jacents':'top ' + t.holdings.length) + ')';
-      if (open && !h.dataset.loaded){
-        h.dataset.loaded = '1';
-        loadHoldingsChange(t, h);
-      }
     });
     return el;
-  }
-
-  // Chargé seulement à l'ouverture de la section (pas au chargement de la page), un
-  // titre à la fois avec une courte pause (même contrainte de concurrence du proxy
-  // public que pour les cartes) — chaque ligne se remplit dès que sa réponse arrive.
-  function loadHoldingsChange(t, holdingsEl){
-    var rows = Array.prototype.slice.call(holdingsEl.querySelectorAll('tr[data-symbol]'));
-    var anySuccess = false;
-    var chain = Promise.resolve();
-    rows.forEach(function(row){
-      var sym = row.getAttribute('data-symbol');
-      var cell = row.querySelector('[data-role="hchg"]');
-      chain = chain.then(function(){
-        if (!sym){ cell.textContent = '—'; return; }
-        return fetchDailyChange(sym).then(function(pct){
-          anySuccess = true;
-          cell.textContent = fmtPct(pct);
-          cell.style.color = pct >= 0 ? 'var(--green)' : 'var(--red)';
-        }).catch(function(){
-          cell.textContent = '—';
-        }).then(function(){
-          return new Promise(function(res){ setTimeout(res, 600); });
-        });
-      });
-    });
-    chain.then(function(){
-      if (!anySuccess) holdingsEl.dataset.loaded = ''; // permet de réessayer en refermant/rouvrant
-    });
   }
 
   function renderCardData(t, data){
