@@ -28,20 +28,11 @@
     border:1px solid var(--border); border-radius:12px; display:flex; flex-wrap:wrap;
     gap:12px; align-items:center;
   }
-  .controls label{font-size:.82rem; color:var(--muted); display:block; margin-bottom:4px;}
-  .controls input[type=text],.controls input[type=password]{
-    background:var(--bg); border:1px solid var(--border); color:var(--text);
-    padding:8px 10px; border-radius:8px; font-size:.9rem; width:280px; max-width:60vw;
-  }
   .controls button{
     background:var(--accent); color:#fff; border:none; padding:9px 16px; border-radius:8px;
     font-size:.9rem; cursor:pointer; font-weight:600;
   }
-  .controls button.secondary{background:var(--panel2); border:1px solid var(--border); color:var(--text);}
   .controls button:disabled{opacity:.5; cursor:default;}
-  .controls a{color:var(--accent);}
-  .controls .field{display:flex; flex-direction:column;}
-  .controls .chk{display:flex; align-items:center; gap:6px; font-size:.85rem; color:var(--muted);}
   #globalStatus{font-size:.8rem; color:var(--muted); margin-left:auto;}
   main{max-width:1200px; margin:0 auto; padding:0 20px 60px;}
   .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:18px;}
@@ -113,18 +104,11 @@
 </header>
 
 <div class="disclaimer">
-  ⚠️ Outil personnel d'aide à la décision, pas un conseil financier. Le bilan est calculé automatiquement à partir de quatre indicateurs techniques simples (voir « Méthodologie » en bas de page) — il ne remplace pas une analyse complète ni les conseils d'un professionnel. Le prix affiché vient de Yahoo Finance (endpoint non officiel, quasi temps réel, relayé via un proxy CORS tiers non affilié — allorigins.win — car Yahoo bloque les appels directs depuis un navigateur) ; si indisponible, la carte retombe sur la clôture Alpha Vantage. L'historique utilisé pour les indicateurs (RSI, moyennes mobiles, MACD) vient du plan gratuit Alpha Vantage (~100 dernières séances, limité à 25 requêtes/jour) — si ce quota est épuisé, seul le prix (via Yahoo) reste affiché, sans indicateurs ni bilan. Les compositions des FNB sont des instantanés figés — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte) pour les pondérations à jour.
+  ⚠️ Outil personnel d'aide à la décision, pas un conseil financier. Le bilan est calculé automatiquement à partir de quatre indicateurs techniques simples (voir « Méthodologie » en bas de page) — il ne remplace pas une analyse complète ni les conseils d'un professionnel. Prix et historique viennent tous les deux de Yahoo Finance (endpoint non officiel, quasi temps réel, relayé via un proxy CORS tiers non affilié — allorigins.win — car Yahoo bloque les appels directs depuis un navigateur) : aucune clé API requise, mais aucune garantie officielle non plus — ça peut cesser de fonctionner sans préavis. Les compositions des FNB sont des instantanés figés — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte) pour les pondérations à jour.
 </div>
 
 <div class="controls">
-  <div class="field" id="keyField">
-    <label for="apiKey">Clé API Alpha Vantage (gratuite sur alphavantage.co)</label>
-    <input type="password" id="apiKey" placeholder="Colle ta clé ici">
-  </div>
-  <button id="saveKeyBtn" class="secondary">Enregistrer la clé</button>
-  <button id="editKeyBtn" class="secondary" style="display:none;">🔑 Changer la clé</button>
   <button id="refreshBtn">Actualiser</button>
-  <span id="quotaStatus" style="font-size:.78rem; color:var(--muted);"></span>
   <span id="globalStatus"></span>
 </div>
 
@@ -135,15 +119,14 @@
 <details class="methodology">
   <summary>Méthodologie du bilan (Achat en bloc / DCA / Attends / Vends)</summary>
   <div class="inner">
-    <p>Le bilan additionne les points de 4 indicateurs techniques calculés à partir de l'historique quotidien disponible (~100 dernières séances, soit ~5 mois — limite du plan gratuit Alpha Vantage), puis classe le score total :</p>
+    <p>Le bilan additionne les points de 4 indicateurs techniques calculés à partir de l'historique quotidien (~1 an) de chaque titre, puis classe le score total :</p>
     <table>
       <tr><th>Indicateur</th><th>Rôle</th><th>Points</th></tr>
       <tr><td>RSI (14 jours)</td><td>Survente / surachat</td><td>&minus;2 à +2</td></tr>
-      <tr><td>Écart au plus haut disponible (~100 j)</td><td>Degré de « rabais » par rapport au récent sommet</td><td>&minus;1 à +2</td></tr>
-      <tr><td>Prix vs moyenne mobile longue (~100 j)</td><td>Filtre de tendance de fond (structurel)</td><td>&minus;3 à +3</td></tr>
+      <tr><td>Écart au plus haut 52 semaines</td><td>Degré de « rabais » par rapport au récent sommet</td><td>&minus;1 à +2</td></tr>
+      <tr><td>Prix vs moyenne mobile 200 j</td><td>Filtre de tendance de fond (structurel)</td><td>&minus;3 à +3</td></tr>
       <tr><td>Prix vs MM50 + signe du MACD</td><td>Confirmation de momentum court terme</td><td>&minus;1 à +1</td></tr>
     </table>
-    <p style="margin-top:10px;">⚠️ Avec seulement ~100 séances d'historique (plan gratuit), la « moyenne mobile longue » et le « plus haut disponible » couvrent ~5 mois plutôt que les 200 jours / 52 semaines classiques — le signal de tendance de fond est donc moins fiable qu'avec un historique complet.</p>
     <p style="margin-top:10px;">Score total (de &minus;7 à +8) →</p>
     <table>
       <tr><th>Score</th><th>Bilan</th><th>Interprétation</th></tr>
@@ -157,7 +140,7 @@
 </details>
 
 <footer>
-  Données de marché : prix via Yahoo Finance (endpoint non officiel, relayé par le proxy tiers <a href="https://allorigins.win/" style="color:inherit;">allorigins.win</a>), historique/indicateurs via <a href="https://www.alphavantage.co/support/#api-key" style="color:inherit;">Alpha Vantage</a> (clé API gratuite requise, stockée uniquement dans ton navigateur). Compositions des FNB : instantanés manuels, voir liens officiels dans chaque carte. Page statique sans backend — tout le calcul se fait dans le navigateur.
+  Données de marché : Yahoo Finance (endpoint non officiel, relayé par le proxy tiers <a href="https://allorigins.win/" style="color:inherit;">allorigins.win</a>), aucune clé requise. Compositions des FNB : instantanés manuels, voir liens officiels dans chaque carte. Page statique sans backend — tout le calcul se fait dans le navigateur.
 </footer>
 
 <script>
@@ -241,35 +224,6 @@
       ]
     }
   ];
-
-  var KEY_STORAGE = 'tsxTracker_apiKey_av';
-  var QUOTA_STORAGE = 'tsxTracker_av_quota';
-  var DAILY_QUOTA = 25;
-
-  function getKey(){ return localStorage.getItem(KEY_STORAGE) || ''; }
-  function setKey(k){ localStorage.setItem(KEY_STORAGE, k); }
-
-  function todayStr(){ return new Date().toISOString().slice(0,10); }
-
-  function getQuotaUsed(){
-    try{
-      var q = JSON.parse(localStorage.getItem(QUOTA_STORAGE) || '{}');
-      return q.date === todayStr() ? (q.count || 0) : 0;
-    }catch(e){ return 0; }
-  }
-
-  function addQuotaUsed(n){
-    var used = getQuotaUsed() + n;
-    localStorage.setItem(QUOTA_STORAGE, JSON.stringify({date: todayStr(), count: used}));
-    return used;
-  }
-
-  function renderQuota(){
-    var used = getQuotaUsed();
-    var remaining = Math.max(0, DAILY_QUOTA - used);
-    document.getElementById('quotaStatus').textContent =
-      remaining + '/' + DAILY_QUOTA + ' requêtes Alpha Vantage restantes (estimation locale, remise à zéro chaque jour)';
-  }
 
   // ---------- indicateurs ----------
   function computeSMA(closes, period){
@@ -368,53 +322,56 @@
   }
 
   // ---------- réseau ----------
-  // Alpha Vantage : le TSX utilise le suffixe .TRT (ex. XEQT.TRT). Plan gratuit =
-  // TIME_SERIES_DAILY en mode "compact" (~100 dernières séances), 25 requêtes/jour, 5/min.
-  function fetchTimeSeries(symbol, apiKey){
-    var url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=' +
-      encodeURIComponent(symbol + '.TRT') + '&outputsize=compact&apikey=' + encodeURIComponent(apiKey);
-    return fetch(url).then(function(res){ return res.json(); }).then(function(json){
-      var series = json['Time Series (Daily)'];
-      if (!series){
-        throw new Error(json['Note'] || json['Information'] || json['Error Message'] || ('Réponse inattendue pour ' + symbol));
-      }
-      var rows = Object.keys(series).sort().map(function(date){
-        var v = series[date];
-        return {
-          date: date,
-          open: parseFloat(v['1. open']),
-          high: parseFloat(v['2. high']),
-          low: parseFloat(v['3. low']),
-          close: parseFloat(v['4. close']),
-          volume: parseFloat(v['5. volume'])
-        };
-      });
-      return rows;
-    });
+
+  // Un fetch() sans limite de temps peut rester bloqué indéfiniment si le proxy ou
+  // Yahoo ne répond jamais (ni succès ni erreur) — ça gelait le bouton « Actualiser ».
+  // On force donc un délai maximum, au-delà duquel on traite ça comme un échec.
+  function withTimeout(promise, ms, label){
+    return Promise.race([
+      promise,
+      new Promise(function(_, reject){
+        setTimeout(function(){ reject(new Error((label || 'Requête') + ' : délai dépassé après ' + Math.round(ms/1000) + 's')); }, ms);
+      })
+    ]);
   }
 
   // Yahoo Finance non officiel, via un proxy CORS public (allorigins.win) puisque
   // l'appel direct depuis un navigateur est bloqué par Yahoo (pas de header CORS).
+  // Un seul appel donne à la fois le cours actuel (meta) et ~1 an d'historique
+  // quotidien (timestamp + indicators.quote) pour calculer les indicateurs.
   // Le proxy est un service tiers non affilié : peut être lent, en panne, ou
-  // disparaître sans préavis — c'est un point de fragilité supplémentaire assumé.
-  function fetchYahooQuote(symbol){
-    var target = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol + '.TO') + '?interval=1d&range=1d';
+  // disparaître sans préavis — c'est un point de fragilité assumé.
+  function fetchYahooHistory(symbol){
+    var target = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol + '.TO') + '?interval=1d&range=1y';
     var proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target);
-    return fetch(proxied).then(function(res){
+    return withTimeout(fetch(proxied), 15000, 'Yahoo (' + symbol + ')').then(function(res){
       if (!res.ok) throw new Error('Proxy CORS HTTP ' + res.status);
       return res.json();
     }).then(function(json){
       var result = json && json.chart && json.chart.result && json.chart.result[0];
-      if (!result || !result.meta) throw new Error('Réponse Yahoo inattendue (via proxy)');
+      if (!result || !result.meta || !result.timestamp) throw new Error('Réponse Yahoo inattendue (via proxy)');
       var meta = result.meta;
-      var price = meta.regularMarketPrice;
-      var prevClose = meta.previousClose != null ? meta.previousClose : meta.chartPreviousClose;
-      if (price == null || prevClose == null) throw new Error('Données de prix Yahoo incomplètes');
+      var ts = result.timestamp;
+      var quote = result.indicators && result.indicators.quote && result.indicators.quote[0];
+      if (!quote) throw new Error('Historique Yahoo incomplet');
+      var rows = [];
+      for (var i=0;i<ts.length;i++){
+        var c = quote.close[i];
+        if (c == null) continue; // séance sans donnée (congé partiel, etc.)
+        rows.push({
+          date: new Date(ts[i]*1000).toISOString().slice(0,10),
+          open: quote.open[i], high: quote.high[i], low: quote.low[i], close: c, volume: quote.volume[i]
+        });
+      }
+      if (!rows.length) throw new Error('Aucune donnée historique pour ' + symbol);
+      var price = meta.regularMarketPrice != null ? meta.regularMarketPrice : rows[rows.length-1].close;
+      var prevClose = meta.previousClose != null ? meta.previousClose :
+        (meta.chartPreviousClose != null ? meta.chartPreviousClose : (rows.length>1 ? rows[rows.length-2].close : price));
       return {
+        rows: rows,
         price: price,
         changeAbs: price - prevClose,
-        changePct: prevClose ? (price - prevClose) / prevClose * 100 : 0,
-        marketTime: meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000) : null
+        changePct: prevClose ? (price - prevClose) / prevClose * 100 : 0
       };
     });
   }
@@ -470,9 +427,7 @@
     changeEl.textContent = fmtPct(data.changePct) + ' (' + (data.changeAbs>=0?'+':'') + data.changeAbs.toFixed(2) + '$)';
     changeEl.className = 'change ' + (data.changeAbs>=0?'up':'down');
     var srcEl = el.querySelector('[data-role="priceSource"]');
-    srcEl.textContent = data.priceSource === 'yahoo'
-      ? '🟢 cours quasi temps réel (Yahoo, ~15 min, via proxy)'
-      : '🕒 clôture du ' + data.lastDate + ' (Alpha Vantage)';
+    srcEl.textContent = '🟢 cours quasi temps réel (Yahoo, ~15 min, via proxy)';
 
     var v = data.verdict;
     var body = el.querySelector('[data-role="body"]');
@@ -480,8 +435,8 @@
       '<div class="verdict ' + v.cls + '"><span>' + escH(v.label) + '</span><span class="score">score ' + v.total + '</span></div>' +
       '<table class="indicators"><tbody>' +
         '<tr><td>RSI (14)</td><td>' + data.rsi.toFixed(1) + ptsBadge(v.pts.rsi) + '</td></tr>' +
-        '<tr><td>Écart plus haut ~100 j</td><td>' + fmtPct(v.distHigh) + ptsBadge(v.pts.high) + '</td></tr>' +
-        '<tr><td>Prix vs MM longue (~100 j)</td><td>' + (data.price>data.smaLong?'au-dessus':'en-dessous') + ' (' + fmtPrice(data.smaLong) + ')' + ptsBadge(v.pts.smaLong) + '</td></tr>' +
+        '<tr><td>Écart plus haut 52 sem.</td><td>' + fmtPct(v.distHigh) + ptsBadge(v.pts.high) + '</td></tr>' +
+        '<tr><td>Prix vs MM200</td><td>' + (data.price>data.smaLong?'au-dessus':'en-dessous') + ' (' + fmtPrice(data.smaLong) + ')' + ptsBadge(v.pts.smaLong) + '</td></tr>' +
         '<tr><td>Momentum (MM50 + MACD)</td><td>' + (data.price>data.sma50?'MM50 haussier':'MM50 baissier') + ', MACD ' + (data.macdHist>0?'+':'') + data.macdHist.toFixed(3) + ptsBadge(v.pts.momentum) + '</td></tr>' +
       '</tbody></table>';
 
@@ -498,108 +453,44 @@
     body.innerHTML = '<div class="err-box">Erreur : ' + escH(msg) + '</div>';
   }
 
-  // Prix disponible (Yahoo) mais indicateurs/bilan impossibles (Alpha Vantage en échec,
-  // ex. quota épuisé) : on affiche quand même le prix plutôt que de tout bloquer.
-  function renderCardPartial(t, data, avErrorMsg){
-    var el = document.getElementById('card-' + t.symbol);
-    el.classList.remove('loading');
-    var priceEl = el.querySelector('[data-role="price"]');
-    var changeEl = el.querySelector('[data-role="change"]');
-    priceEl.textContent = fmtPrice(data.price);
-    changeEl.textContent = fmtPct(data.changePct) + ' (' + (data.changeAbs>=0?'+':'') + data.changeAbs.toFixed(2) + '$)';
-    changeEl.className = 'change ' + (data.changeAbs>=0?'up':'down');
-    var srcEl = el.querySelector('[data-role="priceSource"]');
-    srcEl.textContent = '🟢 cours quasi temps réel (Yahoo, ~15 min, via proxy)';
-
-    var body = el.querySelector('[data-role="body"]');
-    body.innerHTML = '<div class="err-box">Indicateurs et bilan indisponibles (Alpha Vantage) : ' + escH(avErrorMsg) + '</div>';
-  }
-
   function setCardLoading(symbol, isLoading){
     var el = document.getElementById('card-' + symbol);
     if (isLoading) el.classList.add('loading'); else el.classList.remove('loading');
   }
 
-  function refreshTicker(t, apiKey){
+  function refreshTicker(t){
     setCardLoading(t.symbol, true);
-    var avPromise = fetchTimeSeries(t.symbol, apiKey)
-      .then(function(rows){ return {ok:true, rows:rows}; })
-      .catch(function(err){ return {ok:false, error:err.message}; })
-      .then(function(res){ addQuotaUsed(1); renderQuota(); return res; });
-    var yhPromise = fetchYahooQuote(t.symbol)
-      .then(function(q){ return {ok:true, quote:q}; })
-      .catch(function(err){ return {ok:false, error:err.message}; });
-
-    return Promise.all([avPromise, yhPromise]).then(function(results){
-      var av = results[0], yh = results[1];
-
-      if (!av.ok && !yh.ok){
-        renderCardError(t.symbol, av.error);
-        return;
-      }
-      if (!av.ok && yh.ok){
-        renderCardPartial(t, {
-          price: yh.quote.price, changeAbs: yh.quote.changeAbs, changePct: yh.quote.changePct
-        }, av.error);
-        return;
-      }
-
-      // av.ok === true : on a l'historique pour les indicateurs. On affiche le prix
-      // Yahoo s'il a fonctionné (plus frais), sinon la clôture Alpha Vantage.
-      var rows = av.rows;
+    return fetchYahooHistory(t.symbol).then(function(data){
+      var rows = data.rows;
       var closes = rows.map(function(r){ return r.close; });
       var highs = rows.map(function(r){ return r.high; });
-      var last = rows[rows.length-1];
-      var prev = rows.length>1 ? rows[rows.length-2] : last;
       var sma50 = computeSMA(closes,50);
-      var smaLong = computeSMA(closes,100);
+      var smaLong = computeSMA(closes,200);
       var rsi = computeRSI(closes,14);
-      var periodHigh = Math.min(100, highs.length);
+      var periodHigh = Math.min(252, highs.length);
       var highN = Math.max.apply(null, highs.slice(highs.length-periodHigh));
       var macd = computeMACD(closes);
-
-      var price, changeAbs, changePct, priceSource;
-      if (yh.ok){
-        price = yh.quote.price; changeAbs = yh.quote.changeAbs; changePct = yh.quote.changePct; priceSource = 'yahoo';
-      } else {
-        price = last.close; changeAbs = last.close - prev.close;
-        changePct = prev.close ? (changeAbs/prev.close*100) : 0; priceSource = 'av';
-      }
-
-      var verdict = computeVerdict({price:price, sma50:sma50, smaLong:smaLong, rsi:rsi, high52:highN, macdHist:macd.hist});
+      var verdict = computeVerdict({price:data.price, sma50:sma50, smaLong:smaLong, rsi:rsi, high52:highN, macdHist:macd.hist});
       renderCardData(t, {
-        price:price, changeAbs:changeAbs, changePct:changePct, priceSource:priceSource,
+        price:data.price, changeAbs:data.changeAbs, changePct:data.changePct,
         sma50:sma50, smaLong:smaLong, rsi:rsi, macdHist:macd.hist,
-        verdict:verdict, lastDate:last.date, updatedAt:new Date()
+        verdict:verdict, lastDate:rows[rows.length-1].date, updatedAt:new Date()
       });
+    }).catch(function(err){
+      renderCardError(t.symbol, err.message);
     }).finally(function(){
       setCardLoading(t.symbol, false);
     });
   }
 
   function refreshAll(){
-    var apiKey = getKey();
     var status = document.getElementById('globalStatus');
-    if (!apiKey){
-      status.textContent = 'Colle ta clé API Alpha Vantage ci-dessus puis clique « Enregistrer la clé ».';
-      return;
-    }
-    var remaining = DAILY_QUOTA - getQuotaUsed();
-    if (remaining < TICKERS.length){
-      status.textContent = 'Quota quotidien Alpha Vantage probablement épuisé (' + remaining + ' restantes, estimation) — réessaie demain, ou actualise quand même à tes risques.';
-    }
     var btn = document.getElementById('refreshBtn');
     btn.disabled = true;
     status.textContent = 'Actualisation…';
-    var chain = Promise.resolve();
-    TICKERS.forEach(function(t, idx){
-      chain = chain.then(function(){
-        return refreshTicker(t, apiKey).then(function(){
-          return new Promise(function(res){ setTimeout(res, 1200); });
-        });
-      });
-    });
-    chain.then(function(){
+    // En parallèle : chaque refreshTicker gère déjà ses propres erreurs et a un
+    // délai maximum (withTimeout), donc Promise.all se termine toujours.
+    Promise.all(TICKERS.map(function(t){ return refreshTicker(t); })).then(function(){
       status.textContent = 'Dernière actualisation : ' + new Date().toLocaleTimeString('fr-CA');
     }).finally(function(){
       btn.disabled = false;
@@ -608,36 +499,8 @@
 
   // ---------- init ----------
   TICKERS.forEach(buildCardSkeleton);
-
-  var keyInput = document.getElementById('apiKey');
-  var keyField = document.getElementById('keyField');
-  var saveKeyBtn = document.getElementById('saveKeyBtn');
-  var editKeyBtn = document.getElementById('editKeyBtn');
-  keyInput.value = getKey();
-
-  function updateKeyUI(){
-    var hasKey = !!getKey();
-    keyField.style.display = hasKey ? 'none' : 'flex';
-    saveKeyBtn.style.display = hasKey ? 'none' : 'inline-block';
-    editKeyBtn.style.display = hasKey ? 'inline-block' : 'none';
-  }
-
-  saveKeyBtn.addEventListener('click', function(){
-    setKey(keyInput.value.trim());
-    document.getElementById('globalStatus').textContent = 'Clé enregistrée.';
-    updateKeyUI();
-  });
-  editKeyBtn.addEventListener('click', function(){
-    keyField.style.display = 'flex';
-    saveKeyBtn.style.display = 'inline-block';
-    editKeyBtn.style.display = 'none';
-    keyInput.focus();
-  });
   document.getElementById('refreshBtn').addEventListener('click', refreshAll);
-
-  updateKeyUI();
-  renderQuota();
-  if (getKey()) refreshAll();
+  refreshAll();
 })();
 </script>
 </body>
