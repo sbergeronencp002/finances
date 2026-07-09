@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi TSX — XEQT · ZEB · CHPS · VDY</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#161d2e; --panel2:#1d2740; --border:#2a3550;
+    --text:#e8ecf6; --muted:#8b96b3; --accent:#5b8cff;
+    --green:#1fa971; --green-bg:#123328; --blue:#3d7bfa; --blue-bg:#14213f;
+    --amber:#d99a2b; --amber-bg:#3a2c0f; --red:#e05252; --red-bg:#3a1518;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.45;
+  }
+  header{padding:28px 20px 10px; max-width:1200px; margin:0 auto;}
+  header h1{margin:0 0 6px; font-size:1.6rem;}
+  header p.sub{margin:0; color:var(--muted); font-size:.92rem;}
+  .disclaimer{
+    max-width:1200px; margin:14px auto 0; padding:12px 16px; background:var(--panel2);
+    border:1px solid var(--border); border-radius:10px; font-size:.85rem; color:var(--muted);
+  }
+  .controls{
+    max-width:1200px; margin:16px auto; padding:16px; background:var(--panel);
+    border:1px solid var(--border); border-radius:12px; display:flex; flex-wrap:wrap;
+    gap:12px; align-items:center;
+  }
+  .controls label{font-size:.82rem; color:var(--muted); display:block; margin-bottom:4px;}
+  .controls input[type=text],.controls input[type=password]{
+    background:var(--bg); border:1px solid var(--border); color:var(--text);
+    padding:8px 10px; border-radius:8px; font-size:.9rem; width:280px; max-width:60vw;
+  }
+  .controls button{
+    background:var(--accent); color:#fff; border:none; padding:9px 16px; border-radius:8px;
+    font-size:.9rem; cursor:pointer; font-weight:600;
+  }
+  .controls button.secondary{background:var(--panel2); border:1px solid var(--border); color:var(--text);}
+  .controls button:disabled{opacity:.5; cursor:default;}
+  .controls a{color:var(--accent);}
+  .controls .field{display:flex; flex-direction:column;}
+  .controls .chk{display:flex; align-items:center; gap:6px; font-size:.85rem; color:var(--muted);}
+  #globalStatus{font-size:.8rem; color:var(--muted); margin-left:auto;}
+  main{max-width:1200px; margin:0 auto; padding:0 20px 60px;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:18px;}
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:18px; display:flex; flex-direction:column; gap:12px; position:relative;
+  }
+  .card.loading::after{
+    content:''; position:absolute; inset:0; border-radius:14px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);
+    animation:shimmer 1.2s infinite;
+  }
+  @keyframes shimmer{0%{opacity:.3}50%{opacity:1}100%{opacity:.3}}
+  .card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .ticker{font-size:1.3rem; font-weight:800; letter-spacing:.5px;}
+  .ticker-name{color:var(--muted); font-size:.8rem; margin-top:2px;}
+  .price{font-size:1.6rem; font-weight:700; text-align:right;}
+  .change{font-size:.85rem; text-align:right;}
+  .change.up{color:var(--green);} .change.down{color:var(--red);}
+  .verdict{
+    border-radius:10px; padding:10px 12px; font-weight:700; font-size:.95rem;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .verdict.achat{background:var(--green-bg); color:var(--green);}
+  .verdict.dca{background:var(--blue-bg); color:var(--blue);}
+  .verdict.attends{background:var(--amber-bg); color:var(--amber);}
+  .verdict.vends{background:var(--red-bg); color:var(--red);}
+  .verdict .score{font-weight:500; font-size:.78rem; opacity:.85;}
+  .indicators{width:100%; border-collapse:collapse; font-size:.82rem;}
+  .indicators td{padding:4px 0; border-bottom:1px solid var(--border);}
+  .indicators td:first-child{color:var(--muted);}
+  .indicators td:last-child{text-align:right; font-variant-numeric:tabular-nums;}
+  .pts{display:inline-block; min-width:28px; text-align:center; border-radius:5px; padding:1px 5px; margin-left:6px; font-size:.72rem; font-weight:700;}
+  .pts.pos{background:var(--green-bg); color:var(--green);}
+  .pts.neg{background:var(--red-bg); color:var(--red);}
+  .pts.zero{background:var(--panel2); color:var(--muted);}
+  .toggle-holdings{
+    background:none; border:1px solid var(--border); color:var(--text); padding:7px 10px;
+    border-radius:8px; font-size:.8rem; cursor:pointer; text-align:left;
+  }
+  .holdings{display:none; margin-top:6px;}
+  .holdings.open{display:block;}
+  .holdings-meta{font-size:.75rem; color:var(--muted); margin-bottom:6px;}
+  .holdings table{width:100%; border-collapse:collapse; font-size:.82rem;}
+  .holdings td{padding:4px 0;}
+  .holdings td:last-child{text-align:right; width:56px; font-variant-numeric:tabular-nums;}
+  .bar-wrap{background:var(--panel2); border-radius:4px; height:6px; margin-top:3px; overflow:hidden;}
+  .bar{height:100%; background:var(--accent); border-radius:4px;}
+  .card-footer{font-size:.72rem; color:var(--muted); display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;}
+  .card-footer a{color:var(--muted);}
+  .err-box{background:var(--red-bg); color:var(--red); border-radius:8px; padding:10px 12px; font-size:.85rem;}
+  details.methodology{
+    max-width:1200px; margin:24px auto 0; padding:0 20px; color:var(--muted); font-size:.85rem;
+  }
+  details.methodology summary{cursor:pointer; color:var(--accent); font-weight:600; padding:6px 0;}
+  details.methodology .inner{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px; margin-top:8px;
+  }
+  details.methodology table{width:100%; border-collapse:collapse; font-size:.82rem; margin-top:8px;}
+  details.methodology td,details.methodology th{border-bottom:1px solid var(--border); padding:5px 6px; text-align:left;}
+  footer{max-width:1200px; margin:30px auto; padding:0 20px 20px; color:var(--muted); font-size:.75rem;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Suivi TSX — XEQT · ZEB · CHPS · VDY</h1>
+  <p class="sub">Cours, composition et bilan technique (achat en bloc / DCA / attends / vends) pour quatre FNB cotés au TSX.</p>
+</header>
+
+<div class="disclaimer">
+  ⚠️ Outil personnel d'aide à la décision, pas un conseil financier. Le bilan est calculé automatiquement à partir de quatre indicateurs techniques simples (voir « Méthodologie » en bas de page) — il ne remplace pas une analyse complète ni les conseils d'un professionnel. Les données de prix proviennent du plan gratuit de Twelve Data (retardées selon les conditions du plan, pas du temps réel garanti). Les compositions des FNB sont des instantanés figés — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte) pour les pondérations à jour.
+</div>
+
+<div class="controls">
+  <div class="field">
+    <label for="apiKey">Clé API Twelve Data (gratuite sur twelvedata.com)</label>
+    <input type="password" id="apiKey" placeholder="Colle ta clé ici">
+  </div>
+  <button id="saveKeyBtn" class="secondary">Enregistrer la clé</button>
+  <button id="refreshBtn">Actualiser</button>
+  <label class="chk"><input type="checkbox" id="autoRefresh"> Auto (5 min)</label>
+  <span id="globalStatus"></span>
+</div>
+
+<main>
+  <div class="grid" id="cardGrid"></div>
+</main>
+
+<details class="methodology">
+  <summary>Méthodologie du bilan (Achat en bloc / DCA / Attends / Vends)</summary>
+  <div class="inner">
+    <p>Le bilan additionne les points de 4 indicateurs techniques calculés à partir de l'historique quotidien (≈1 an) de chaque titre, puis classe le score total :</p>
+    <table>
+      <tr><th>Indicateur</th><th>Rôle</th><th>Points</th></tr>
+      <tr><td>RSI (14 jours)</td><td>Survente / surachat</td><td>&minus;2 à +2</td></tr>
+      <tr><td>Écart au plus haut 52 semaines</td><td>Degré de « rabais » par rapport au récent sommet</td><td>&minus;1 à +2</td></tr>
+      <tr><td>Prix vs moyenne mobile 200 j</td><td>Filtre de tendance de fond (structurel)</td><td>&minus;3 à +3</td></tr>
+      <tr><td>Prix vs MM50 + signe du MACD</td><td>Confirmation de momentum court terme</td><td>&minus;1 à +1</td></tr>
+    </table>
+    <p style="margin-top:10px;">Score total (de &minus;7 à +8) →</p>
+    <table>
+      <tr><th>Score</th><th>Bilan</th><th>Interprétation</th></tr>
+      <tr><td>≥ 5</td><td>🟢 Achat en bloc</td><td>Rabais marqué + tendance de fond intacte : conviction élevée pour un dépôt important.</td></tr>
+      <tr><td>2 à 4</td><td>🔵 DCA</td><td>Conditions normales/favorables : poursuivre les achats périodiques réguliers.</td></tr>
+      <tr><td>&minus;2 à 1</td><td>🟡 Attends</td><td>Titre étiré ou neutre sans opportunité claire : reporter les nouveaux dépôts.</td></tr>
+      <tr><td>≤ &minus;3</td><td>🔴 Vends</td><td>Tendance de fond cassée et momentum négatif : signal tactique de réduction, pas une recommandation d'abandonner un placement de long terme.</td></tr>
+    </table>
+    <p style="margin-top:10px;">Ce système est simpliste par construction (aucune analyse fondamentale, aucun contexte macro) — il sert de repère, pas de vérité absolue. Pour XEQT et VDY en particulier (FNB de long terme largement diversifiés), un signal « Vends » devrait être rare et interprété avec prudence.</p>
+  </div>
+</details>
+
+<footer>
+  Données de marché : <a href="https://twelvedata.com/" style="color:inherit;">Twelve Data</a> (clé API gratuite requise, stockée uniquement dans ton navigateur). Compositions des FNB : instantanés manuels, voir liens officiels dans chaque carte. Page statique sans backend — tout le calcul se fait dans le navigateur.
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  function escH(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  var TICKERS = [
+    {
+      symbol:'XEQT',
+      name:"iShares Core Equity ETF Portfolio",
+      type:"Répartition d'actifs (FNB de FNB) — actions mondiales, 100% actions",
+      officialUrl:'https://www.blackrock.com/ca/investors/en/products/309480/ishares-core-equity-etf-portfolio',
+      holdingsType:'funds',
+      holdingsAsOf:"instantané indicatif (à vérifier sur la fiche BlackRock)",
+      holdings:[
+        {name:'iShares Core S&P/TSX Capped Composite Index ETF (XIC) — Canada', weight:26.8},
+        {name:'iShares Core MSCI EAFE IMI Index ETF (XEF) — International développé', weight:25.3},
+        {name:'iShares Core S&P Total U.S. Stock Market ETF (ITOT) — États-Unis', weight:21.9},
+        {name:'iShares Core S&P Total U.S. Stock Market ETF (XTOT) — États-Unis', weight:20.4},
+        {name:'iShares Core MSCI Emerging Markets IMI Index ETF (XEC) — Marchés émergents', weight:5.4}
+      ]
+    },
+    {
+      symbol:'ZEB',
+      name:'BMO Equal Weight Banks Index ETF',
+      type:'Secteur — 6 grandes banques canadiennes, poids égal',
+      officialUrl:'https://bmogam.com/ca-en/products/exchange-traded-fund/bmo-equal-weight-banks-index-etf-zeb/',
+      holdingsType:'stocks',
+      holdingsAsOf:"instantané indicatif (indice à poids égal, se rééquilibre trimestriellement)",
+      holdings:[
+        {name:'Banque Toronto-Dominion (TD)', weight:17.1},
+        {name:'Banque CIBC (CM)', weight:16.9},
+        {name:'Banque Royale du Canada (RY)', weight:16.9},
+        {name:'Banque de Montréal (BMO)', weight:16.5},
+        {name:'Banque Nationale du Canada (NA)', weight:16.3},
+        {name:'Banque Scotia (BNS)', weight:16.1}
+      ]
+    },
+    {
+      symbol:'CHPS',
+      name:'Global X Artificial Intelligence Semiconductor Index ETF',
+      type:'Thématique — semi-conducteurs IA, couvert en $ CA',
+      officialUrl:'https://www.globalx.ca/product/chps',
+      holdingsType:'stocks',
+      holdingsAsOf:'30 septembre 2025 (rapport officiel Global X)',
+      holdings:[
+        {name:'NVIDIA Corp.', weight:18.97},
+        {name:'Broadcom Inc.', weight:16.69},
+        {name:'Taiwan Semiconductor Mfg. (ADR)', weight:16.06},
+        {name:'ASML Holding NV', weight:10.43},
+        {name:'Advanced Micro Devices Inc.', weight:7.19},
+        {name:'QUALCOMM Inc.', weight:4.91},
+        {name:'Lam Research Corp.', weight:4.64},
+        {name:'Applied Materials Inc.', weight:4.47},
+        {name:'ARM Holdings PLC (ADR)', weight:4.10},
+        {name:'KLA Corp.', weight:3.90}
+      ]
+    },
+    {
+      symbol:'VDY',
+      name:'Vanguard FTSE Canadian High Dividend Yield Index ETF',
+      type:'Dividendes élevés — actions canadiennes',
+      officialUrl:'https://www.vanguard.ca/en/product/etf/equity/9560/vanguard-ftse-canadian-high-dividend-yield-index-etf',
+      holdingsType:'stocks',
+      holdingsAsOf:'instantané indicatif (à vérifier sur la fiche Vanguard)',
+      holdings:[
+        {name:'Banque Royale du Canada', weight:15.26},
+        {name:'Banque Toronto-Dominion', weight:10.93},
+        {name:'Enbridge Inc.', weight:6.80},
+        {name:'Banque de Montréal', weight:6.54},
+        {name:'Banque CIBC', weight:5.83},
+        {name:'Banque Scotia', weight:5.69},
+        {name:'Canadian Natural Resources Ltd.', weight:5.28},
+        {name:'Suncor Energy Inc.', weight:4.27},
+        {name:'TC Energy Corp.', weight:3.93},
+        {name:'Manuvie (Manulife Financial Corp.)', weight:3.65}
+      ]
+    }
+  ];
+
+  var KEY_STORAGE = 'tsxTracker_apiKey';
+  var autoTimer = null;
+
+  function getKey(){ return localStorage.getItem(KEY_STORAGE) || ''; }
+  function setKey(k){ localStorage.setItem(KEY_STORAGE, k); }
+
+  // ---------- indicateurs ----------
+  function computeSMA(closes, period){
+    var n = Math.min(period, closes.length);
+    var slice = closes.slice(closes.length - n);
+    var sum = 0;
+    for (var i=0;i<slice.length;i++) sum += slice[i];
+    return sum / slice.length;
+  }
+
+  function computeRSI(closes, period){
+    period = period || 14;
+    if (closes.length < period + 1) return 50;
+    var gains=0, losses=0, i, diff;
+    for (i=1;i<=period;i++){
+      diff = closes[i]-closes[i-1];
+      if (diff>=0) gains+=diff; else losses-=diff;
+    }
+    var avgGain = gains/period, avgLoss = losses/period;
+    for (i=period+1;i<closes.length;i++){
+      diff = closes[i]-closes[i-1];
+      var gain = diff>0?diff:0;
+      var loss = diff<0?-diff:0;
+      avgGain = (avgGain*(period-1)+gain)/period;
+      avgLoss = (avgLoss*(period-1)+loss)/period;
+    }
+    if (avgLoss === 0) return 100;
+    var rs = avgGain/avgLoss;
+    return 100 - (100/(1+rs));
+  }
+
+  function emaFull(values, period){
+    var out = new Array(values.length).fill(null);
+    if (values.length < period) return out;
+    var seed = 0;
+    for (var i=0;i<period;i++) seed += values[i];
+    seed /= period;
+    out[period-1] = seed;
+    var k = 2/(period+1);
+    var prev = seed;
+    for (var j=period;j<values.length;j++){
+      prev = values[j]*k + prev*(1-k);
+      out[j] = prev;
+    }
+    return out;
+  }
+
+  function computeMACD(closes){
+    var fast = emaFull(closes,12);
+    var slow = emaFull(closes,26);
+    var macdSeries = [];
+    for (var i=0;i<closes.length;i++){
+      if (fast[i]!=null && slow[i]!=null) macdSeries.push(fast[i]-slow[i]);
+    }
+    var signalSeries = emaFull(macdSeries,9);
+    var lastMacd = macdSeries[macdSeries.length-1];
+    var lastSignal = signalSeries[signalSeries.length-1];
+    if (lastMacd==null || lastSignal==null) return {macd:0, signal:0, hist:0};
+    return {macd:lastMacd, signal:lastSignal, hist:lastMacd-lastSignal};
+  }
+
+  function computeVerdict(d){
+    var pts = {};
+    // RSI
+    if (d.rsi < 30) pts.rsi = 2;
+    else if (d.rsi < 45) pts.rsi = 1;
+    else if (d.rsi <= 55) pts.rsi = 0;
+    else if (d.rsi <= 70) pts.rsi = -1;
+    else pts.rsi = -2;
+
+    // écart au plus haut 52 semaines
+    var distHigh = (d.price - d.high52) / d.high52 * 100; // <=0
+    if (distHigh <= -15) pts.high = 2;
+    else if (distHigh <= -7) pts.high = 1;
+    else if (distHigh <= -1) pts.high = 0;
+    else pts.high = -1;
+
+    // tendance de fond (vs SMA200)
+    pts.sma200 = d.price > d.sma200 ? 3 : -3;
+
+    // momentum court terme (SMA50 + MACD)
+    var bull50 = d.price > d.sma50;
+    var bullMacd = d.macdHist > 0;
+    if (bull50 && bullMacd) pts.momentum = 1;
+    else if (!bull50 && !bullMacd) pts.momentum = -1;
+    else pts.momentum = 0;
+
+    var total = pts.rsi + pts.high + pts.sma200 + pts.momentum;
+    var label, cls;
+    if (total >= 5){ label='Achat en bloc'; cls='achat'; }
+    else if (total >= 2){ label='DCA'; cls='dca'; }
+    else if (total >= -2){ label='Attends'; cls='attends'; }
+    else { label='Vends'; cls='vends'; }
+
+    return {pts:pts, total:total, label:label, cls:cls, distHigh:distHigh};
+  }
+
+  // ---------- réseau ----------
+  function fetchTimeSeries(symbol, apiKey){
+    var url = 'https://api.twelvedata.com/time_series?symbol=' + encodeURIComponent(symbol) +
+      '&exchange=TSX&interval=1day&outputsize=260&apikey=' + encodeURIComponent(apiKey);
+    return fetch(url).then(function(res){ return res.json(); }).then(function(json){
+      if (json.status === 'error' || json.code){
+        throw new Error(json.message || ('Erreur API pour ' + symbol));
+      }
+      if (!json.values || !json.values.length){
+        throw new Error('Aucune donnée reçue pour ' + symbol);
+      }
+      var rows = json.values.slice().reverse().map(function(v){
+        return {
+          date: v.datetime,
+          open: parseFloat(v.open),
+          high: parseFloat(v.high),
+          low: parseFloat(v.low),
+          close: parseFloat(v.close),
+          volume: parseFloat(v.volume)
+        };
+      });
+      return rows;
+    });
+  }
+
+  // ---------- rendu ----------
+  var grid = document.getElementById('cardGrid');
+
+  function fmtPrice(v){ return '$' + v.toFixed(2); }
+  function fmtPct(v){ return (v>=0?'+':'') + v.toFixed(2) + '%'; }
+  function ptsBadge(p){
+    var c = p>0?'pos':(p<0?'neg':'zero');
+    var s = (p>0?'+':'') + p;
+    return '<span class="pts ' + c + '">' + s + '</span>';
+  }
+
+  function buildCardSkeleton(t){
+    var el = document.createElement('div');
+    el.className = 'card';
+    el.id = 'card-' + t.symbol;
+    el.innerHTML =
+      '<div class="card-head">' +
+        '<div><div class="ticker">' + escH(t.symbol) + '</div><div class="ticker-name">' + escH(t.name) + '</div></div>' +
+        '<div class="price-block"><div class="price" data-role="price">—</div><div class="change" data-role="change">Clique « Actualiser »</div></div>' +
+      '</div>' +
+      '<div data-role="body"></div>' +
+      '<button class="toggle-holdings" data-role="toggleHoldings">▸ Composition (' + (t.holdingsType==='funds'?'FNB sous-jacents':'top ' + t.holdings.length) + ')</button>' +
+      '<div class="holdings" data-role="holdings">' +
+        '<div class="holdings-meta">Données au : ' + escH(t.holdingsAsOf) + ' — <a href="' + escH(t.officialUrl) + '" target="_blank" rel="noopener" style="color:inherit;">fiche officielle ↗</a></div>' +
+        '<table><tbody>' + t.holdings.map(function(h){
+          return '<tr><td>' + escH(h.name) + '<div class="bar-wrap"><div class="bar" style="width:' + Math.min(100, h.weight*3) + '%"></div></div></td><td>' + h.weight.toFixed(2) + '%</td></tr>';
+        }).join('') + '</tbody></table>' +
+      '</div>' +
+      '<div class="card-footer">' +
+        '<span>' + escH(t.type) + '</span>' +
+        '<a href="' + escH(t.officialUrl) + '" target="_blank" rel="noopener">Fiche du fonds ↗</a>' +
+      '</div>';
+    grid.appendChild(el);
+    el.querySelector('[data-role="toggleHoldings"]').addEventListener('click', function(){
+      var h = el.querySelector('[data-role="holdings"]');
+      var btn = el.querySelector('[data-role="toggleHoldings"]');
+      var open = h.classList.toggle('open');
+      btn.textContent = (open?'▾':'▸') + ' Composition (' + (t.holdingsType==='funds'?'FNB sous-jacents':'top ' + t.holdings.length) + ')';
+    });
+    return el;
+  }
+
+  function renderCardData(t, data){
+    var el = document.getElementById('card-' + t.symbol);
+    el.classList.remove('loading');
+    var priceEl = el.querySelector('[data-role="price"]');
+    var changeEl = el.querySelector('[data-role="change"]');
+    priceEl.textContent = fmtPrice(data.price);
+    changeEl.textContent = fmtPct(data.changePct) + ' (' + (data.changeAbs>=0?'+':'') + data.changeAbs.toFixed(2) + '$)';
+    changeEl.className = 'change ' + (data.changeAbs>=0?'up':'down');
+
+    var v = data.verdict;
+    var body = el.querySelector('[data-role="body"]');
+    body.innerHTML =
+      '<div class="verdict ' + v.cls + '"><span>' + escH(v.label) + '</span><span class="score">score ' + v.total + '</span></div>' +
+      '<table class="indicators"><tbody>' +
+        '<tr><td>RSI (14)</td><td>' + data.rsi.toFixed(1) + ptsBadge(v.pts.rsi) + '</td></tr>' +
+        '<tr><td>Écart plus haut 52 sem.</td><td>' + fmtPct(v.distHigh) + ptsBadge(v.pts.high) + '</td></tr>' +
+        '<tr><td>Prix vs MM200</td><td>' + (data.price>data.sma200?'au-dessus':'en-dessous') + ' (' + fmtPrice(data.sma200) + ')' + ptsBadge(v.pts.sma200) + '</td></tr>' +
+        '<tr><td>Momentum (MM50 + MACD)</td><td>' + (data.price>data.sma50?'MM50 haussier':'MM50 baissier') + ', MACD ' + (data.macdHist>0?'+':'') + data.macdHist.toFixed(3) + ptsBadge(v.pts.momentum) + '</td></tr>' +
+      '</tbody></table>';
+
+    var footer = el.querySelector('.card-footer');
+    var ts = document.createElement('span');
+    ts.textContent = 'Cours au ' + data.lastDate + ' · maj ' + data.updatedAt.toLocaleTimeString('fr-CA');
+    footer.insertBefore(ts, footer.firstChild);
+  }
+
+  function renderCardError(symbol, msg){
+    var el = document.getElementById('card-' + symbol);
+    el.classList.remove('loading');
+    var body = el.querySelector('[data-role="body"]');
+    body.innerHTML = '<div class="err-box">Erreur : ' + escH(msg) + '</div>';
+  }
+
+  function setCardLoading(symbol, isLoading){
+    var el = document.getElementById('card-' + symbol);
+    if (isLoading) el.classList.add('loading'); else el.classList.remove('loading');
+  }
+
+  function refreshTicker(t, apiKey){
+    setCardLoading(t.symbol, true);
+    return fetchTimeSeries(t.symbol, apiKey).then(function(rows){
+      var closes = rows.map(function(r){ return r.close; });
+      var highs = rows.map(function(r){ return r.high; });
+      var last = rows[rows.length-1];
+      var prev = rows.length>1 ? rows[rows.length-2] : last;
+      var changeAbs = last.close - prev.close;
+      var changePct = prev.close ? (changeAbs/prev.close*100) : 0;
+      var sma50 = computeSMA(closes,50);
+      var sma200 = computeSMA(closes,200);
+      var rsi = computeRSI(closes,14);
+      var period52 = Math.min(252, highs.length);
+      var high52 = Math.max.apply(null, highs.slice(highs.length-period52));
+      var macd = computeMACD(closes);
+      var verdict = computeVerdict({price:last.close, sma50:sma50, sma200:sma200, rsi:rsi, high52:high52, macdHist:macd.hist});
+      renderCardData(t, {
+        price:last.close, changeAbs:changeAbs, changePct:changePct,
+        sma50:sma50, sma200:sma200, rsi:rsi, macdHist:macd.hist,
+        verdict:verdict, lastDate:last.date, updatedAt:new Date()
+      });
+    }).catch(function(err){
+      renderCardError(t.symbol, err.message);
+    }).finally(function(){
+      setCardLoading(t.symbol, false);
+    });
+  }
+
+  function refreshAll(){
+    var apiKey = getKey();
+    var status = document.getElementById('globalStatus');
+    if (!apiKey){
+      status.textContent = 'Colle ta clé API Twelve Data ci-dessus puis clique « Enregistrer la clé ».';
+      return;
+    }
+    var btn = document.getElementById('refreshBtn');
+    btn.disabled = true;
+    status.textContent = 'Actualisation…';
+    var chain = Promise.resolve();
+    TICKERS.forEach(function(t, idx){
+      chain = chain.then(function(){
+        return refreshTicker(t, apiKey).then(function(){
+          return new Promise(function(res){ setTimeout(res, 350); });
+        });
+      });
+    });
+    chain.then(function(){
+      status.textContent = 'Dernière actualisation : ' + new Date().toLocaleTimeString('fr-CA');
+    }).finally(function(){
+      btn.disabled = false;
+    });
+  }
+
+  // ---------- init ----------
+  TICKERS.forEach(buildCardSkeleton);
+
+  var keyInput = document.getElementById('apiKey');
+  keyInput.value = getKey();
+  document.getElementById('saveKeyBtn').addEventListener('click', function(){
+    setKey(keyInput.value.trim());
+    document.getElementById('globalStatus').textContent = 'Clé enregistrée.';
+  });
+  document.getElementById('refreshBtn').addEventListener('click', refreshAll);
+  document.getElementById('autoRefresh').addEventListener('change', function(e){
+    if (e.target.checked){
+      autoTimer = setInterval(refreshAll, 5*60*1000);
+    } else if (autoTimer){
+      clearInterval(autoTimer);
+      autoTimer = null;
+    }
+  });
+
+  if (getKey()) refreshAll();
+})();
+</script>
+</body>
+</html>
