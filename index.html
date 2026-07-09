@@ -386,25 +386,28 @@
     return withTimeout(work, 8000, 'Yahoo (' + symbol + ')');
   }
 
-  // Un seul appel groupé (endpoint "quote" de Yahoo, symboles séparés par virgule)
-  // pour le % quotidien de chaque titre d'une composition, au lieu d'un appel par
-  // titre — sinon une seule carte (10 titres) surchargerait le proxy public.
-  function fetchHoldingsQuotes(symbols){
-    var target = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + encodeURIComponent(symbols.join(','));
+  // Le endpoint "quote" (v7) de Yahoo exige désormais une authentification par
+  // cookie/jeton ("crumb") que le proxy ne peut pas fournir — contrairement à
+  // "chart" (v8), resté ouvert, qu'on utilise déjà pour les cartes. On réutilise
+  // donc "chart" ici aussi (juste 5 jours, pas besoin de l'historique complet).
+  function fetchDailyChange(symbol){
+    var target = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol) + '?interval=1d&range=5d';
     var proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target);
     var work = fetch(proxied).then(function(res){
       if (!res.ok) throw new Error('Proxy CORS HTTP ' + res.status);
       return res.json();
     }).then(function(json){
-      var list = json && json.quoteResponse && json.quoteResponse.result;
-      if (!list) throw new Error('Réponse quote Yahoo inattendue');
-      var map = {};
-      list.forEach(function(q){
-        map[q.symbol] = { changePct: q.regularMarketChangePercent };
-      });
-      return map;
+      var result = json && json.chart && json.chart.result && json.chart.result[0];
+      var quote = result && result.indicators && result.indicators.quote && result.indicators.quote[0];
+      if (!result || !quote) throw new Error('Réponse inattendue pour ' + symbol);
+      var closes = quote.close.filter(function(c){ return c != null; });
+      if (closes.length < 2) throw new Error('Historique insuffisant pour ' + symbol);
+      var last = closes[closes.length-1];
+      var prev = closes[closes.length-2];
+      var price = result.meta && result.meta.regularMarketPrice != null ? result.meta.regularMarketPrice : last;
+      return prev ? (price - prev) / prev * 100 : 0;
     });
-    return withTimeout(work, 8000, 'Yahoo quotes');
+    return withTimeout(work, 8000, 'Yahoo (' + symbol + ')');
   }
 
   // ---------- rendu ----------
@@ -455,27 +458,31 @@
     return el;
   }
 
-  // Chargé seulement à l'ouverture de la section (pas au chargement de la page) pour
-  // limiter le nombre d'appels au proxy public — un seul appel groupé par carte.
+  // Chargé seulement à l'ouverture de la section (pas au chargement de la page), un
+  // titre à la fois avec une courte pause (même contrainte de concurrence du proxy
+  // public que pour les cartes) — chaque ligne se remplit dès que sa réponse arrive.
   function loadHoldingsChange(t, holdingsEl){
-    var symbols = t.holdings.map(function(h){ return h.symbol; }).filter(Boolean);
-    if (!symbols.length) return;
-    fetchHoldingsQuotes(symbols).then(function(map){
-      Array.prototype.forEach.call(holdingsEl.querySelectorAll('tr[data-symbol]'), function(row){
-        var q = map[row.getAttribute('data-symbol')];
-        var cell = row.querySelector('[data-role="hchg"]');
-        if (q && q.changePct != null){
-          cell.textContent = fmtPct(q.changePct);
-          cell.style.color = q.changePct >= 0 ? 'var(--green)' : 'var(--red)';
-        } else {
+    var rows = Array.prototype.slice.call(holdingsEl.querySelectorAll('tr[data-symbol]'));
+    var anySuccess = false;
+    var chain = Promise.resolve();
+    rows.forEach(function(row){
+      var sym = row.getAttribute('data-symbol');
+      var cell = row.querySelector('[data-role="hchg"]');
+      chain = chain.then(function(){
+        if (!sym){ cell.textContent = '—'; return; }
+        return fetchDailyChange(sym).then(function(pct){
+          anySuccess = true;
+          cell.textContent = fmtPct(pct);
+          cell.style.color = pct >= 0 ? 'var(--green)' : 'var(--red)';
+        }).catch(function(){
           cell.textContent = '—';
-        }
+        }).then(function(){
+          return new Promise(function(res){ setTimeout(res, 600); });
+        });
       });
-    }).catch(function(){
-      Array.prototype.forEach.call(holdingsEl.querySelectorAll('[data-role="hchg"]'), function(cell){
-        cell.textContent = '—';
-      });
-      holdingsEl.dataset.loaded = ''; // permet de réessayer en refermant/rouvrant
+    });
+    chain.then(function(){
+      if (!anySuccess) holdingsEl.dataset.loaded = ''; // permet de réessayer en refermant/rouvrant
     });
   }
 
