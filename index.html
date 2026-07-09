@@ -488,9 +488,19 @@
     var btn = document.getElementById('refreshBtn');
     btn.disabled = true;
     status.textContent = 'Actualisation…';
-    // En parallèle : chaque refreshTicker gère déjà ses propres erreurs et a un
-    // délai maximum (withTimeout), donc Promise.all se termine toujours.
-    Promise.all(TICKERS.map(function(t){ return refreshTicker(t); })).then(function(){
+    // Un à la fois, avec une courte pause entre chaque : le proxy CORS public
+    // (allorigins.win) rejette ("Failed to fetch") au-delà de ~1-2 connexions
+    // simultanées par visiteur. Chaque refreshTicker a de toute façon un délai
+    // maximum (withTimeout), donc la chaîne se termine toujours.
+    var chain = Promise.resolve();
+    TICKERS.forEach(function(t){
+      chain = chain.then(function(){
+        return refreshTicker(t).then(function(){
+          return new Promise(function(res){ setTimeout(res, 800); });
+        });
+      });
+    });
+    chain.then(function(){
       status.textContent = 'Dernière actualisation : ' + new Date().toLocaleTimeString('fr-CA');
     }).finally(function(){
       btn.disabled = false;
