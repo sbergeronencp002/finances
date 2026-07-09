@@ -113,17 +113,17 @@
 </header>
 
 <div class="disclaimer">
-  ⚠️ Outil personnel d'aide à la décision, pas un conseil financier. Le bilan est calculé automatiquement à partir de quatre indicateurs techniques simples (voir « Méthodologie » en bas de page) — il ne remplace pas une analyse complète ni les conseils d'un professionnel. Les données de prix proviennent du plan gratuit de Twelve Data (retardées selon les conditions du plan, pas du temps réel garanti). Les compositions des FNB sont des instantanés figés — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte) pour les pondérations à jour.
+  ⚠️ Outil personnel d'aide à la décision, pas un conseil financier. Le bilan est calculé automatiquement à partir de quatre indicateurs techniques simples (voir « Méthodologie » en bas de page) — il ne remplace pas une analyse complète ni les conseils d'un professionnel. Les données de prix proviennent du plan gratuit d'Alpha Vantage (historique quotidien « compact », ~100 dernières séances — pas du temps réel garanti, et limité à 25 requêtes/jour). Les compositions des FNB sont des instantanés figés — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte) pour les pondérations à jour.
 </div>
 
 <div class="controls">
   <div class="field">
-    <label for="apiKey">Clé API Twelve Data (gratuite sur twelvedata.com)</label>
+    <label for="apiKey">Clé API Alpha Vantage (gratuite sur alphavantage.co)</label>
     <input type="password" id="apiKey" placeholder="Colle ta clé ici">
   </div>
   <button id="saveKeyBtn" class="secondary">Enregistrer la clé</button>
   <button id="refreshBtn">Actualiser</button>
-  <label class="chk"><input type="checkbox" id="autoRefresh"> Auto (5 min)</label>
+  <span id="quotaStatus" style="font-size:.78rem; color:var(--muted);"></span>
   <span id="globalStatus"></span>
 </div>
 
@@ -134,14 +134,15 @@
 <details class="methodology">
   <summary>Méthodologie du bilan (Achat en bloc / DCA / Attends / Vends)</summary>
   <div class="inner">
-    <p>Le bilan additionne les points de 4 indicateurs techniques calculés à partir de l'historique quotidien (≈1 an) de chaque titre, puis classe le score total :</p>
+    <p>Le bilan additionne les points de 4 indicateurs techniques calculés à partir de l'historique quotidien disponible (~100 dernières séances, soit ~5 mois — limite du plan gratuit Alpha Vantage), puis classe le score total :</p>
     <table>
       <tr><th>Indicateur</th><th>Rôle</th><th>Points</th></tr>
       <tr><td>RSI (14 jours)</td><td>Survente / surachat</td><td>&minus;2 à +2</td></tr>
-      <tr><td>Écart au plus haut 52 semaines</td><td>Degré de « rabais » par rapport au récent sommet</td><td>&minus;1 à +2</td></tr>
-      <tr><td>Prix vs moyenne mobile 200 j</td><td>Filtre de tendance de fond (structurel)</td><td>&minus;3 à +3</td></tr>
+      <tr><td>Écart au plus haut disponible (~100 j)</td><td>Degré de « rabais » par rapport au récent sommet</td><td>&minus;1 à +2</td></tr>
+      <tr><td>Prix vs moyenne mobile longue (~100 j)</td><td>Filtre de tendance de fond (structurel)</td><td>&minus;3 à +3</td></tr>
       <tr><td>Prix vs MM50 + signe du MACD</td><td>Confirmation de momentum court terme</td><td>&minus;1 à +1</td></tr>
     </table>
+    <p style="margin-top:10px;">⚠️ Avec seulement ~100 séances d'historique (plan gratuit), la « moyenne mobile longue » et le « plus haut disponible » couvrent ~5 mois plutôt que les 200 jours / 52 semaines classiques — le signal de tendance de fond est donc moins fiable qu'avec un historique complet.</p>
     <p style="margin-top:10px;">Score total (de &minus;7 à +8) →</p>
     <table>
       <tr><th>Score</th><th>Bilan</th><th>Interprétation</th></tr>
@@ -155,7 +156,7 @@
 </details>
 
 <footer>
-  Données de marché : <a href="https://twelvedata.com/" style="color:inherit;">Twelve Data</a> (clé API gratuite requise, stockée uniquement dans ton navigateur). Compositions des FNB : instantanés manuels, voir liens officiels dans chaque carte. Page statique sans backend — tout le calcul se fait dans le navigateur.
+  Données de marché : <a href="https://www.alphavantage.co/support/#api-key" style="color:inherit;">Alpha Vantage</a> (clé API gratuite requise, stockée uniquement dans ton navigateur). Compositions des FNB : instantanés manuels, voir liens officiels dans chaque carte. Page statique sans backend — tout le calcul se fait dans le navigateur.
 </footer>
 
 <script>
@@ -240,11 +241,34 @@
     }
   ];
 
-  var KEY_STORAGE = 'tsxTracker_apiKey';
-  var autoTimer = null;
+  var KEY_STORAGE = 'tsxTracker_apiKey_av';
+  var QUOTA_STORAGE = 'tsxTracker_av_quota';
+  var DAILY_QUOTA = 25;
 
   function getKey(){ return localStorage.getItem(KEY_STORAGE) || ''; }
   function setKey(k){ localStorage.setItem(KEY_STORAGE, k); }
+
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+  function getQuotaUsed(){
+    try{
+      var q = JSON.parse(localStorage.getItem(QUOTA_STORAGE) || '{}');
+      return q.date === todayStr() ? (q.count || 0) : 0;
+    }catch(e){ return 0; }
+  }
+
+  function addQuotaUsed(n){
+    var used = getQuotaUsed() + n;
+    localStorage.setItem(QUOTA_STORAGE, JSON.stringify({date: todayStr(), count: used}));
+    return used;
+  }
+
+  function renderQuota(){
+    var used = getQuotaUsed();
+    var remaining = Math.max(0, DAILY_QUOTA - used);
+    document.getElementById('quotaStatus').textContent =
+      remaining + '/' + DAILY_QUOTA + ' requêtes Alpha Vantage restantes (estimation locale, remise à zéro chaque jour)';
+  }
 
   // ---------- indicateurs ----------
   function computeSMA(closes, period){
@@ -322,8 +346,8 @@
     else if (distHigh <= -1) pts.high = 0;
     else pts.high = -1;
 
-    // tendance de fond (vs SMA200)
-    pts.sma200 = d.price > d.sma200 ? 3 : -3;
+    // tendance de fond (vs moyenne mobile longue disponible, ~100 j en plan gratuit)
+    pts.smaLong = d.price > d.smaLong ? 3 : -3;
 
     // momentum court terme (SMA50 + MACD)
     var bull50 = d.price > d.sma50;
@@ -332,7 +356,7 @@
     else if (!bull50 && !bullMacd) pts.momentum = -1;
     else pts.momentum = 0;
 
-    var total = pts.rsi + pts.high + pts.sma200 + pts.momentum;
+    var total = pts.rsi + pts.high + pts.smaLong + pts.momentum;
     var label, cls;
     if (total >= 5){ label='Achat en bloc'; cls='achat'; }
     else if (total >= 2){ label='DCA'; cls='dca'; }
@@ -343,24 +367,25 @@
   }
 
   // ---------- réseau ----------
+  // Alpha Vantage : le TSX utilise le suffixe .TRT (ex. XEQT.TRT). Plan gratuit =
+  // TIME_SERIES_DAILY en mode "compact" (~100 dernières séances), 25 requêtes/jour, 5/min.
   function fetchTimeSeries(symbol, apiKey){
-    var url = 'https://api.twelvedata.com/time_series?symbol=' + encodeURIComponent(symbol) +
-      '&exchange=TSX&interval=1day&outputsize=260&apikey=' + encodeURIComponent(apiKey);
+    var url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=' +
+      encodeURIComponent(symbol + '.TRT') + '&outputsize=compact&apikey=' + encodeURIComponent(apiKey);
     return fetch(url).then(function(res){ return res.json(); }).then(function(json){
-      if (json.status === 'error' || json.code){
-        throw new Error(json.message || ('Erreur API pour ' + symbol));
+      var series = json['Time Series (Daily)'];
+      if (!series){
+        throw new Error(json['Note'] || json['Information'] || json['Error Message'] || ('Réponse inattendue pour ' + symbol));
       }
-      if (!json.values || !json.values.length){
-        throw new Error('Aucune donnée reçue pour ' + symbol);
-      }
-      var rows = json.values.slice().reverse().map(function(v){
+      var rows = Object.keys(series).sort().map(function(date){
+        var v = series[date];
         return {
-          date: v.datetime,
-          open: parseFloat(v.open),
-          high: parseFloat(v.high),
-          low: parseFloat(v.low),
-          close: parseFloat(v.close),
-          volume: parseFloat(v.volume)
+          date: date,
+          open: parseFloat(v['1. open']),
+          high: parseFloat(v['2. high']),
+          low: parseFloat(v['3. low']),
+          close: parseFloat(v['4. close']),
+          volume: parseFloat(v['5. volume'])
         };
       });
       return rows;
@@ -424,8 +449,8 @@
       '<div class="verdict ' + v.cls + '"><span>' + escH(v.label) + '</span><span class="score">score ' + v.total + '</span></div>' +
       '<table class="indicators"><tbody>' +
         '<tr><td>RSI (14)</td><td>' + data.rsi.toFixed(1) + ptsBadge(v.pts.rsi) + '</td></tr>' +
-        '<tr><td>Écart plus haut 52 sem.</td><td>' + fmtPct(v.distHigh) + ptsBadge(v.pts.high) + '</td></tr>' +
-        '<tr><td>Prix vs MM200</td><td>' + (data.price>data.sma200?'au-dessus':'en-dessous') + ' (' + fmtPrice(data.sma200) + ')' + ptsBadge(v.pts.sma200) + '</td></tr>' +
+        '<tr><td>Écart plus haut ~100 j</td><td>' + fmtPct(v.distHigh) + ptsBadge(v.pts.high) + '</td></tr>' +
+        '<tr><td>Prix vs MM longue (~100 j)</td><td>' + (data.price>data.smaLong?'au-dessus':'en-dessous') + ' (' + fmtPrice(data.smaLong) + ')' + ptsBadge(v.pts.smaLong) + '</td></tr>' +
         '<tr><td>Momentum (MM50 + MACD)</td><td>' + (data.price>data.sma50?'MM50 haussier':'MM50 baissier') + ', MACD ' + (data.macdHist>0?'+':'') + data.macdHist.toFixed(3) + ptsBadge(v.pts.momentum) + '</td></tr>' +
       '</tbody></table>';
 
@@ -457,17 +482,19 @@
       var changeAbs = last.close - prev.close;
       var changePct = prev.close ? (changeAbs/prev.close*100) : 0;
       var sma50 = computeSMA(closes,50);
-      var sma200 = computeSMA(closes,200);
+      var smaLong = computeSMA(closes,100);
       var rsi = computeRSI(closes,14);
-      var period52 = Math.min(252, highs.length);
-      var high52 = Math.max.apply(null, highs.slice(highs.length-period52));
+      var periodHigh = Math.min(100, highs.length);
+      var highN = Math.max.apply(null, highs.slice(highs.length-periodHigh));
       var macd = computeMACD(closes);
-      var verdict = computeVerdict({price:last.close, sma50:sma50, sma200:sma200, rsi:rsi, high52:high52, macdHist:macd.hist});
+      var verdict = computeVerdict({price:last.close, sma50:sma50, smaLong:smaLong, rsi:rsi, high52:highN, macdHist:macd.hist});
       renderCardData(t, {
         price:last.close, changeAbs:changeAbs, changePct:changePct,
-        sma50:sma50, sma200:sma200, rsi:rsi, macdHist:macd.hist,
+        sma50:sma50, smaLong:smaLong, rsi:rsi, macdHist:macd.hist,
         verdict:verdict, lastDate:last.date, updatedAt:new Date()
       });
+      addQuotaUsed(1);
+      renderQuota();
     }).catch(function(err){
       renderCardError(t.symbol, err.message);
     }).finally(function(){
@@ -479,8 +506,12 @@
     var apiKey = getKey();
     var status = document.getElementById('globalStatus');
     if (!apiKey){
-      status.textContent = 'Colle ta clé API Twelve Data ci-dessus puis clique « Enregistrer la clé ».';
+      status.textContent = 'Colle ta clé API Alpha Vantage ci-dessus puis clique « Enregistrer la clé ».';
       return;
+    }
+    var remaining = DAILY_QUOTA - getQuotaUsed();
+    if (remaining < TICKERS.length){
+      status.textContent = 'Quota quotidien Alpha Vantage probablement épuisé (' + remaining + ' restantes, estimation) — réessaie demain, ou actualise quand même à tes risques.';
     }
     var btn = document.getElementById('refreshBtn');
     btn.disabled = true;
@@ -489,7 +520,7 @@
     TICKERS.forEach(function(t, idx){
       chain = chain.then(function(){
         return refreshTicker(t, apiKey).then(function(){
-          return new Promise(function(res){ setTimeout(res, 350); });
+          return new Promise(function(res){ setTimeout(res, 1200); });
         });
       });
     });
@@ -510,15 +541,8 @@
     document.getElementById('globalStatus').textContent = 'Clé enregistrée.';
   });
   document.getElementById('refreshBtn').addEventListener('click', refreshAll);
-  document.getElementById('autoRefresh').addEventListener('change', function(e){
-    if (e.target.checked){
-      autoTimer = setInterval(refreshAll, 5*60*1000);
-    } else if (autoTimer){
-      clearInterval(autoTimer);
-      autoTimer = null;
-    }
-  });
 
+  renderQuota();
   if (getKey()) refreshAll();
 })();
 </script>
