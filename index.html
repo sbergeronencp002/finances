@@ -113,7 +113,7 @@
 </header>
 
 <div class="disclaimer">
-  ⚠️ Outil personnel d'aide à la décision, pas un conseil financier. Le bilan est calculé automatiquement à partir de quatre indicateurs techniques simples (voir « Méthodologie » en bas de page) — il ne remplace pas une analyse complète ni les conseils d'un professionnel. Les prix affichés sont les clôtures quotidiennes du plan gratuit Alpha Vantage (~100 dernières séances, pas de temps réel, limité à 25 requêtes/jour) — un essai d'ajout de cours quasi temps réel via Yahoo Finance a été abandonné car bloqué par CORS depuis un navigateur. Les compositions des FNB sont des instantanés figés — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte) pour les pondérations à jour.
+  ⚠️ Outil personnel d'aide à la décision, pas un conseil financier. Le bilan est calculé automatiquement à partir de quatre indicateurs techniques simples (voir « Méthodologie » en bas de page) — il ne remplace pas une analyse complète ni les conseils d'un professionnel. Le prix affiché vient de Yahoo Finance (endpoint non officiel, quasi temps réel, relayé via un proxy CORS tiers non affilié — allorigins.win — car Yahoo bloque les appels directs depuis un navigateur) ; si indisponible, la carte retombe sur la clôture Alpha Vantage. L'historique utilisé pour les indicateurs (RSI, moyennes mobiles, MACD) vient du plan gratuit Alpha Vantage (~100 dernières séances, limité à 25 requêtes/jour) — si ce quota est épuisé, seul le prix (via Yahoo) reste affiché, sans indicateurs ni bilan. Les compositions des FNB sont des instantanés figés — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte) pour les pondérations à jour.
 </div>
 
 <div class="controls">
@@ -157,7 +157,7 @@
 </details>
 
 <footer>
-  Données de marché : <a href="https://www.alphavantage.co/support/#api-key" style="color:inherit;">Alpha Vantage</a> (clé API gratuite requise, stockée uniquement dans ton navigateur). Compositions des FNB : instantanés manuels, voir liens officiels dans chaque carte. Page statique sans backend — tout le calcul se fait dans le navigateur.
+  Données de marché : prix via Yahoo Finance (endpoint non officiel, relayé par le proxy tiers <a href="https://allorigins.win/" style="color:inherit;">allorigins.win</a>), historique/indicateurs via <a href="https://www.alphavantage.co/support/#api-key" style="color:inherit;">Alpha Vantage</a> (clé API gratuite requise, stockée uniquement dans ton navigateur). Compositions des FNB : instantanés manuels, voir liens officiels dans chaque carte. Page statique sans backend — tout le calcul se fait dans le navigateur.
 </footer>
 
 <script>
@@ -393,6 +393,32 @@
     });
   }
 
+  // Yahoo Finance non officiel, via un proxy CORS public (allorigins.win) puisque
+  // l'appel direct depuis un navigateur est bloqué par Yahoo (pas de header CORS).
+  // Le proxy est un service tiers non affilié : peut être lent, en panne, ou
+  // disparaître sans préavis — c'est un point de fragilité supplémentaire assumé.
+  function fetchYahooQuote(symbol){
+    var target = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol + '.TO') + '?interval=1d&range=1d';
+    var proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target);
+    return fetch(proxied).then(function(res){
+      if (!res.ok) throw new Error('Proxy CORS HTTP ' + res.status);
+      return res.json();
+    }).then(function(json){
+      var result = json && json.chart && json.chart.result && json.chart.result[0];
+      if (!result || !result.meta) throw new Error('Réponse Yahoo inattendue (via proxy)');
+      var meta = result.meta;
+      var price = meta.regularMarketPrice;
+      var prevClose = meta.previousClose != null ? meta.previousClose : meta.chartPreviousClose;
+      if (price == null || prevClose == null) throw new Error('Données de prix Yahoo incomplètes');
+      return {
+        price: price,
+        changeAbs: price - prevClose,
+        changePct: prevClose ? (price - prevClose) / prevClose * 100 : 0,
+        marketTime: meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000) : null
+      };
+    });
+  }
+
   // ---------- rendu ----------
   var grid = document.getElementById('cardGrid');
 
@@ -444,7 +470,9 @@
     changeEl.textContent = fmtPct(data.changePct) + ' (' + (data.changeAbs>=0?'+':'') + data.changeAbs.toFixed(2) + '$)';
     changeEl.className = 'change ' + (data.changeAbs>=0?'up':'down');
     var srcEl = el.querySelector('[data-role="priceSource"]');
-    srcEl.textContent = '🕒 clôture du ' + data.lastDate;
+    srcEl.textContent = data.priceSource === 'yahoo'
+      ? '🟢 cours quasi temps réel (Yahoo, ~15 min, via proxy)'
+      : '🕒 clôture du ' + data.lastDate + ' (Alpha Vantage)';
 
     var v = data.verdict;
     var body = el.querySelector('[data-role="body"]');
@@ -470,6 +498,23 @@
     body.innerHTML = '<div class="err-box">Erreur : ' + escH(msg) + '</div>';
   }
 
+  // Prix disponible (Yahoo) mais indicateurs/bilan impossibles (Alpha Vantage en échec,
+  // ex. quota épuisé) : on affiche quand même le prix plutôt que de tout bloquer.
+  function renderCardPartial(t, data, avErrorMsg){
+    var el = document.getElementById('card-' + t.symbol);
+    el.classList.remove('loading');
+    var priceEl = el.querySelector('[data-role="price"]');
+    var changeEl = el.querySelector('[data-role="change"]');
+    priceEl.textContent = fmtPrice(data.price);
+    changeEl.textContent = fmtPct(data.changePct) + ' (' + (data.changeAbs>=0?'+':'') + data.changeAbs.toFixed(2) + '$)';
+    changeEl.className = 'change ' + (data.changeAbs>=0?'up':'down');
+    var srcEl = el.querySelector('[data-role="priceSource"]');
+    srcEl.textContent = '🟢 cours quasi temps réel (Yahoo, ~15 min, via proxy)';
+
+    var body = el.querySelector('[data-role="body"]');
+    body.innerHTML = '<div class="err-box">Indicateurs et bilan indisponibles (Alpha Vantage) : ' + escH(avErrorMsg) + '</div>';
+  }
+
   function setCardLoading(symbol, isLoading){
     var el = document.getElementById('card-' + symbol);
     if (isLoading) el.classList.add('loading'); else el.classList.remove('loading');
@@ -477,29 +522,56 @@
 
   function refreshTicker(t, apiKey){
     setCardLoading(t.symbol, true);
-    return fetchTimeSeries(t.symbol, apiKey).then(function(rows){
+    var avPromise = fetchTimeSeries(t.symbol, apiKey)
+      .then(function(rows){ return {ok:true, rows:rows}; })
+      .catch(function(err){ return {ok:false, error:err.message}; })
+      .then(function(res){ addQuotaUsed(1); renderQuota(); return res; });
+    var yhPromise = fetchYahooQuote(t.symbol)
+      .then(function(q){ return {ok:true, quote:q}; })
+      .catch(function(err){ return {ok:false, error:err.message}; });
+
+    return Promise.all([avPromise, yhPromise]).then(function(results){
+      var av = results[0], yh = results[1];
+
+      if (!av.ok && !yh.ok){
+        renderCardError(t.symbol, av.error);
+        return;
+      }
+      if (!av.ok && yh.ok){
+        renderCardPartial(t, {
+          price: yh.quote.price, changeAbs: yh.quote.changeAbs, changePct: yh.quote.changePct
+        }, av.error);
+        return;
+      }
+
+      // av.ok === true : on a l'historique pour les indicateurs. On affiche le prix
+      // Yahoo s'il a fonctionné (plus frais), sinon la clôture Alpha Vantage.
+      var rows = av.rows;
       var closes = rows.map(function(r){ return r.close; });
       var highs = rows.map(function(r){ return r.high; });
       var last = rows[rows.length-1];
       var prev = rows.length>1 ? rows[rows.length-2] : last;
-      var changeAbs = last.close - prev.close;
-      var changePct = prev.close ? (changeAbs/prev.close*100) : 0;
       var sma50 = computeSMA(closes,50);
       var smaLong = computeSMA(closes,100);
       var rsi = computeRSI(closes,14);
       var periodHigh = Math.min(100, highs.length);
       var highN = Math.max.apply(null, highs.slice(highs.length-periodHigh));
       var macd = computeMACD(closes);
-      var verdict = computeVerdict({price:last.close, sma50:sma50, smaLong:smaLong, rsi:rsi, high52:highN, macdHist:macd.hist});
+
+      var price, changeAbs, changePct, priceSource;
+      if (yh.ok){
+        price = yh.quote.price; changeAbs = yh.quote.changeAbs; changePct = yh.quote.changePct; priceSource = 'yahoo';
+      } else {
+        price = last.close; changeAbs = last.close - prev.close;
+        changePct = prev.close ? (changeAbs/prev.close*100) : 0; priceSource = 'av';
+      }
+
+      var verdict = computeVerdict({price:price, sma50:sma50, smaLong:smaLong, rsi:rsi, high52:highN, macdHist:macd.hist});
       renderCardData(t, {
-        price:last.close, changeAbs:changeAbs, changePct:changePct,
+        price:price, changeAbs:changeAbs, changePct:changePct, priceSource:priceSource,
         sma50:sma50, smaLong:smaLong, rsi:rsi, macdHist:macd.hist,
         verdict:verdict, lastDate:last.date, updatedAt:new Date()
       });
-      addQuotaUsed(1);
-      renderQuota();
-    }).catch(function(err){
-      renderCardError(t.symbol, err.message);
     }).finally(function(){
       setCardLoading(t.symbol, false);
     });
