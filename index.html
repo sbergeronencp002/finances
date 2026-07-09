@@ -344,7 +344,10 @@
   function fetchYahooHistory(symbol){
     var target = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol + '.TO') + '?interval=1d&range=1y';
     var proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target);
-    return withTimeout(fetch(proxied), 15000, 'Yahoo (' + symbol + ')').then(function(res){
+    // Le timeout doit couvrir toute la chaîne (connexion + lecture du corps de la
+    // réponse), pas seulement fetch() : un proxy qui accepte la connexion puis reste
+    // bloqué en cours de réponse laisserait res.json() attendre indéfiniment sinon.
+    var work = fetch(proxied).then(function(res){
       if (!res.ok) throw new Error('Proxy CORS HTTP ' + res.status);
       return res.json();
     }).then(function(json){
@@ -364,9 +367,14 @@
         });
       }
       if (!rows.length) throw new Error('Aucune donnée historique pour ' + symbol);
-      var price = meta.regularMarketPrice != null ? meta.regularMarketPrice : rows[rows.length-1].close;
-      var prevClose = meta.previousClose != null ? meta.previousClose :
-        (meta.chartPreviousClose != null ? meta.chartPreviousClose : (rows.length>1 ? rows[rows.length-2].close : price));
+      // Le % quotidien doit comparer au dernier jour de bourse précédent, pas à
+      // meta.chartPreviousClose (qui est la clôture d'AVANT le début de la fenêtre
+      // demandée — donc d'il y a ~1 an avec range=1y, pas d'hier). On prend toujours
+      // le repère dans l'historique lui-même.
+      var last = rows[rows.length-1];
+      var prevRow = rows.length > 1 ? rows[rows.length-2] : last;
+      var price = meta.regularMarketPrice != null ? meta.regularMarketPrice : last.close;
+      var prevClose = prevRow.close;
       return {
         rows: rows,
         price: price,
@@ -374,6 +382,7 @@
         changePct: prevClose ? (price - prevClose) / prevClose * 100 : 0
       };
     });
+    return withTimeout(work, 8000, 'Yahoo (' + symbol + ')');
   }
 
   // ---------- rendu ----------
