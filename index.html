@@ -20,9 +20,10 @@
   header h1{margin:0 0 6px; font-size:1.6rem;}
   header p.sub{margin:0; color:var(--muted); font-size:.92rem;}
   .disclaimer{
-    max-width:1200px; margin:14px auto 0; padding:12px 16px; background:var(--panel2);
-    border:1px solid var(--border); border-radius:10px; font-size:.85rem; color:var(--muted);
+    max-width:1200px; margin:10px auto 0; padding:0 16px; font-size:.78rem; color:var(--muted);
   }
+  .disclaimer summary{cursor:pointer; padding:4px 0; list-style:revert;}
+  .disclaimer p{margin:6px 0 8px; line-height:1.4;}
   .controls{
     max-width:1200px; margin:16px auto; padding:16px; background:var(--panel);
     border:1px solid var(--border); border-radius:12px; display:flex; flex-wrap:wrap;
@@ -105,9 +106,10 @@
   <p class="sub">Cours, composition et bilan sur 3 critères techniques pondérés (score /100 → action suggérée) pour quatre FNB cotés au TSX.</p>
 </header>
 
-<div class="disclaimer">
-  ⚠️ Outil personnel d'aide à la décision, pas un conseil financier. Le bilan combine 3 critères techniques automatiques (voir « Méthodologie » en bas de page), calculés uniquement à partir des cours — aucune analyse fondamentale, macro ou d'actualité. Ça ne remplace pas une analyse complète ni les conseils d'un professionnel. Prix et historique viennent de Yahoo Finance (endpoint non officiel, quasi temps réel, relayé via un proxy CORS tiers non affilié — allorigins.win) : aucune clé API requise, mais aucune garantie officielle — ça peut cesser de fonctionner sans préavis. La liste des titres qui composent chaque FNB est un instantané figé (voir date dans chaque section « Composition ») — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte). Le % affiché à côté de chaque titre en composition est son propre % quotidien réel, chargé à l'ouverture de la section.
-</div>
+<details class="disclaimer">
+  <summary>⚠️ Avertissement et notes techniques</summary>
+  <p>Outil personnel d'aide à la décision, pas un conseil financier. Le bilan combine 3 critères techniques automatiques (voir « Méthodologie » en bas de page), calculés uniquement à partir des cours — aucune analyse fondamentale, macro ou d'actualité. Ça ne remplace pas une analyse complète ni les conseils d'un professionnel. Prix et historique viennent de Yahoo Finance (endpoint non officiel, quasi temps réel, relayé via un proxy CORS tiers non affilié — allorigins.win) : aucune clé API requise, mais aucune garantie officielle — ça peut cesser de fonctionner sans préavis. La liste des titres qui composent chaque FNB est un instantané figé (voir date dans chaque section « Composition ») — vérifiez toujours la fiche officielle de l'émetteur (lien dans chaque carte). Le % affiché à côté de chaque titre en composition est son propre % quotidien réel, chargé à l'ouverture de la section.</p>
+</details>
 
 <div class="controls">
   <button id="refreshBtn">Actualiser</button>
